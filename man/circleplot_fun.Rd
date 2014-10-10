@@ -1,4 +1,5 @@
-\name{circleplot}
+\name{circleplot_fun}
+\alias{circleplot}
 \title{Plot a distance matrix}
 \usage{
 circleplot(distance.matrix, plot.control)
