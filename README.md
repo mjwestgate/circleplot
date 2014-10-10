@@ -27,9 +27,8 @@ point.attributes<-point.attr(test.dist)
 
 
 
-# draw
-quartz(width=5, height=5)
-par(mfrow=c(2, 2))
+# draw some examples
+par(mfrow=c(2, 2))  # set window
 
 # simple plot of a binary matrix
 circleplot(test.dist2, plot.control=list(line.curvature=0, line.width=1))
