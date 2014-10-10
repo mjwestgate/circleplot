@@ -1,4 +1,5 @@
-\name{point.attr}
+\name{point_attr}
+\alias{point.attr}
 \title{List of point colours}
 \usage{
 point.attr(distance.matrix)
