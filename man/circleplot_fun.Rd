@@ -16,7 +16,7 @@ circleplot(distance.matrix, plot.control)
     \item{line.colours} vector containing colours, either named or in hexadecimal. Used with 'line.breaks' above; length should equal length(breaks)-1}
     \item{line.width}{vector. if length-1 contains absolute value; if length-2 contains minimum and max}
     \item{line.curvature}{the percentage of maximum (as given by line.width above) sent to gaussian curve i.e. curvature=1 always has a min line width =0, max line width=max, while curvature=0 is a line with constant width}
-}
+}}
 }
 \value{
 Draws a plot showing the labels of the distance matrix as nodes around the circumference of a circle, with quadratic lines joining connected nodes.
