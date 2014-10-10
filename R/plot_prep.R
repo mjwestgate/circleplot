@@ -16,9 +16,9 @@ circle.point.arrangement<-function(dataset,
 			circle.points$label<-names(final.order)
 			},
 		cluster={
-			library(ape)
+			#library(ape)
 			connection.distance<-as.dist(1-dataset) #, method="binary")
-			result<-hclust(connection.distance)
+			result<-ape::hclust(connection.distance)
 			circle.points$label<-colnames(dataset)[result$order]
 			}
 		)
@@ -167,9 +167,9 @@ prep.numeric<-function(
 	# point info prep (Note: could add a clustering algorithm here to better represent inter-point relationships)
 	circle.points<-as.data.frame(make.circle(attr(numeric.matrix, "Size"))[, 2:3])
 	# work out point order using clustering
-	library(ape)
+	#library(ape)
 	connection.distance<-as.dist(1-(sqrt(numeric.matrix^2)))
-	result<-hclust(connection.distance)
+	result<-ape::hclust(connection.distance)
 	circle.points$label<-point.names[result$order]
 
 	# add point attributes

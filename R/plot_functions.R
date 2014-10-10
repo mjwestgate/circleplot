@@ -176,9 +176,9 @@ circleplot<-function(
 # simple code to get pretty point colours
 point.attr<-function(distance.matrix)
 	{
-	library(RColorBrewer)	# to choose an existing palette
+	#library(RColorBrewer)	# to choose an existing palette
 	labels<-as.character(attr(distance.matrix, "Labels"))
-	color.hex<-c(brewer.pal(8, "Dark2"), 
+	color.hex<-c(RColorBrewer::brewer.pal(8, "Dark2"), 
 		brewer.pal(9, "Set1"),
 		brewer.pal(8, "Set2")
 		)[1:length(labels)]

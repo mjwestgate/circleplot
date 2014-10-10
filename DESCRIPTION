@@ -6,4 +6,5 @@ Author: Martin J. Westgate <martinjwestgate@gmail.com>
 Maintainer: Martin J. Westgate <martinjwestgate@gmail.com>
 Description: Tools for automated plotting of numeric or binary distance matrices.
 Depends: R (>= 3.1.0), RColorBrewer, ape
+Imports: RColorBrewer, ape
 License: GPL-2
