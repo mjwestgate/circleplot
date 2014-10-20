@@ -1,7 +1,7 @@
 circleplot
 ==========
 
-Tools for exploring distance matrices using circular plots.
+Tools for exploring distance and association matrices using circular plots. Support for square matrices (to allow display of directional or asymmetric relationships) is in development, but is currently not functional.
 
 # Example:
 ```
