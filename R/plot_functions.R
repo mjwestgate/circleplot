@@ -182,7 +182,7 @@ check.plot.control<-function(
 	# overwrite these values where others are provided
 	if(missing(plot.control)==FALSE){
 		names.provided<-names(plot.control)
-		for(i in 4:9){
+		for(i in 1:9){
 			if(any(names.provided==names(plot.defaults)[i])){
 			entry.thisrun<-which(names.provided==names(plot.defaults)[i])
 			plot.defaults[[i]]<-plot.control[[entry.thisrun]]
@@ -220,7 +220,7 @@ circleplot<-function(
 	plot.control<-check.plot.control(distance.matrix, plot.control)
 
 	# run appropriate prep code
-	if(plot.control$properties[1]){	# if binary
+	if(as.logical(plot.control$properties[1])){	# if binary
 		result<-prep.binary(distance.matrix, plot.control$points)
 	}else{
 		result<-prep.numeric(distance.matrix, plot.control$points)}

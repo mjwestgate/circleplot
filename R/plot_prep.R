@@ -135,7 +135,7 @@ prep.binary<-function(
 	# apply(dataset, 1, sum)==apply(dataset, 2, sum) # can use row or col sums
 
 	# calculate points/lines
-	result<-inner.circle(dataset, point.attributes, simple)
+	result<-inner.circle(dataset, point.attributes, simple=TRUE)
 	if(simple==FALSE){
 		added.points<-outer.circle(dataset, initial.points)
 		result$outer.circle=added.points$points
