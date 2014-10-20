@@ -3,8 +3,7 @@
 # add curved connecting lines to circleplot()
 draw.curves<-function(
 	input,
-	plot.control,
-	binary
+	plot.control
 	)
 	{
 	# calculate inter-point distances, to allow setting of pc.scale (to calculate curvature of lines relative to origin)
@@ -19,12 +18,12 @@ draw.curves<-function(
 	input$lines$colour<-plot.control$line.cols[line.cuts]
 
 	# add min and max widths per line
-	if(binary){
-		if(length(plot.control$line.width)==2){plot.control$line.width<-plot.control$line.width[2]}} # too many values set
-	if(length(plot.control$line.width)==1){
+	if(plot.control$properties[1]){	# binary
+		if(length(plot.control$line.width)==2){plot.control$line.width<-plot.control$line.width[2]}} # fix if too many vals
+	if(length(plot.control$line.width)==1){	# for a single value, make the line width a maximum value
 		input$lines$lwd.min<-plot.control$line.width-(plot.control$line.width*plot.control$line.curvature)
 		input$lines$lwd.max<-plot.control$line.width
-	}else{
+	}else{	# otherwise, set range
 		data.thisrun<-input$lines$value	# export data on the value of each line
 		specified.range<-max(plot.control$line.width)-min(plot.control$line.width)	# range of desired values
 		data.thisrun<-data.thisrun-min(data.thisrun)	# scale data.this run to this same range
@@ -67,19 +66,41 @@ draw.curves<-function(
 		lwd.range<-input$lines$lwd.max[i]-input$lines$lwd.min[i]
 		line.widths.thisrun<-(line.widths*lwd.range)+input$lines$lwd.min[i]
 
-		# set line colours according to categorical or continuous lines
-		if(plot.control$line.gradient){
-			# get line colours from input$points
-			color1<-input$points$colour[row1]
-			color2<-input$points$colour[row2]
-			color.matrix<-col2rgb(c(color1, color2))	#c("#4D4D4D", "#FFFFFF"))
-			color.matrix.expanded<-apply(color.matrix, 1, function(x){seq(x[1], x[2], length.out=100)})
-		colours.final<-rgb(color.matrix.expanded, maxColorValue=255)
+		# set line colours according to categorical or continuous lines 	
+		if(plot.control$properties[1]){	# binary
 
-		# ensure colours are in correct order
-		distance.pos<-sqrt((new.curve$x[1]-input$points$x[row1])^2)
-		if(distance.pos>0.001){colours.final<-colours.final[100:1]}
-		}else{colours.final<-rep(input$lines$colour[i], 100)}
+			if(plot.control$properties[2]){ # asymmetric
+				color.matrix<-col2rgb(plot.control$line.cols)
+				color.matrix.expanded<-apply(color.matrix, 1, function(x){seq(x[1], x[2], length.out=50)})
+				colours.final<-rgb(color.matrix.expanded, maxColorValue=255)
+				colours.final<-c(rep(colours.final[1], 50), colours.final)
+				# ensure colours are in correct order
+				distance.pos<-sqrt((new.curve$x[1]-input$points$x[row1])^2)
+				if(distance.pos>0.001){colours.final<-colours.final[100:1]}
+				# reverse if order is wrong
+				if(result$lines$value[i]==-1){colours.final<-colours.final[100:1]}		
+				if(result$lines$value[i]==2){colours.final<-rep(plot.control$line.cols[2], 100)}
+
+			}else{	# symmetric
+
+				if(plot.control$line.gradient){		# lines coloured according to a gradient
+					# get line colours from input$points
+					color1<-input$points$colour[row1]
+					color2<-input$points$colour[row2]
+					color.matrix<-col2rgb(c(color1, color2))
+					color.matrix.expanded<-apply(color.matrix, 1, function(x){seq(x[1], x[2], length.out=100)})
+					colours.final<-rgb(color.matrix.expanded, maxColorValue=255)
+					# ensure colours are in correct order
+					distance.pos<-sqrt((new.curve$x[1]-input$points$x[row1])^2)
+					if(distance.pos>0.001){colours.final<-colours.final[100:1]}		
+
+				}else{
+					colours.final<-rep(input$lines$colour[i], 100)	# single colour
+
+				}}	# end if asymmetric
+		}else{	# if numeric
+			colours.final<-rep(input$lines$colour[i], 100)
+		}
 
 		# draw a line that smoothly changes between these colours
 		segments(
@@ -95,8 +116,44 @@ draw.curves<-function(
 # function to set plot properties
 check.plot.control<-function(
 	distance.matrix,
-	plot.control)
+	plot.control
+	)
 	{
+# determine properties of input 
+	input<-distance.matrix
+
+	# work out if input is binary or continuous
+	binary.test<-c(max(distance.matrix, na.rm=TRUE)-min(distance.matrix, na.rm=TRUE)==1,	
+		max(distance.matrix, na.rm=TRUE)==1)
+	if(any(binary.test==FALSE)==FALSE){binary.test<-TRUE}else{binary.test<-FALSE}
+
+	# check whether the input matrix is symmetric or asymmetric
+	#distance.matrix<-as.dist(distance.matrix)
+	if(binary.test){
+		dist1<-as.dist(2-(distance.matrix +t(distance.matrix)))	
+		dist2<-as.dist(2-(2* distance.matrix))
+		asymmetry.test<-any(c(dist1==dist2)==FALSE)
+		if(asymmetry.test){distance.matrix<-dist1
+		}else{distance.matrix<-dist2}
+	}else{
+		dist1<-as.dist(as.matrix(distance.matrix))
+		dist2<-as.dist(t(as.matrix(distance.matrix)))
+		asymmetry.test<-any(c(dist1==dist2)==FALSE)
+		if(asymmetry.test){
+			dist1[1:length(dist1)]<-apply(cbind(as.vector(dist1), as.vector(dist2)), 1, mean)}
+		distance.matrix<-dist1
+		}
+
+	# export these
+	matrix.properties<-c(
+		#class=class(distance.matrix), 
+		binary=binary.test,
+		asymmetric= asymmetry.test)
+
+	# if there are now row or column headings, add these now
+	if(length(attr(distance.matrix, "Labels"))==0){
+		attr(distance.matrix, "Labels")<-c(1:attr(distance.matrix, "Size"))}
+
 	# generate a some default values for points
 	point.defaults<-data.frame(
 			label=attr(distance.matrix, "Labels"),
@@ -105,26 +162,40 @@ check.plot.control<-function(
 			stringsAsFactors=FALSE)
 	rownames(point.defaults)<-point.defaults$label
 
+	# generate sensible cuts for line colours
+	if(binary.test){cut.vals<-c(-1, 2)
+	}else{cut.vals<-c(min(distance.matrix, na.rm=TRUE), max(distance.matrix, na.rm=TRUE))}
+
 	# make a list of point and line attributes, showing the required properties
 	plot.defaults<-list(
+		input.matrix=input,
+		processed.matrix=distance.matrix,
+		properties=matrix.properties,
 		points=point.defaults,
-		line.gradient=FALSE,	# options for binary matrices
-		line.breaks=c(min(distance.matrix), max(distance.matrix)),	# options for continuous matrices
+		line.gradient=FALSE,	# option for binary matrices only
+		line.breaks=cut.vals,
 		line.cols="grey30",
 		line.curvature=0.3,
-		line.width=1)
+		line.width=1
+		)
 	
-	# overwrite these values where necessary
-	if(missing(plot.control)){return(plot.defaults)	# if no other information given, use these default settings
-	}else{	# otherwise, replace entries with the data provided
+	# overwrite these values where others are provided
+	if(missing(plot.control)==FALSE){
 		names.provided<-names(plot.control)
-		for(i in 1:6){
+		for(i in 4:9){
 			if(any(names.provided==names(plot.defaults)[i])){
 			entry.thisrun<-which(names.provided==names(plot.defaults)[i])
 			plot.defaults[[i]]<-plot.control[[entry.thisrun]]
-			}}
-		return(plot.defaults)
-		}	# end else
+			}}}
+
+	# make up to two colours if asymmetry.test==TRUE, and two points have not yet been provided
+	default.directional.cols<-c("grey80", "grey10")
+	if(asymmetry.test){
+		if(length(plot.defaults$line.cols)==1){
+			if(plot.defaults$line.cols=="grey30"){plot.defaults$line.cols<-default.directional.cols
+			}else{plot.defaults$line.cols<-c(default.directional.cols[1], plot.defaults$line.cols)}}}
+
+	return(plot.defaults)
 	}	# end function
 	
 
@@ -145,15 +216,11 @@ circleplot<-function(
 	# simple	# later, will be passed to prep.binary - whether to draw a complex plot (or not). defaults to TRUE.
 	)
 	{
-	# set defaults for line type
+	# set plot attributes/defaults
 	plot.control<-check.plot.control(distance.matrix, plot.control)
 
-	# work out if matrix is binary or continuous
-	binary.test<-c(max(distance.matrix)-min(distance.matrix)==1,	max(distance.matrix)==1)
-	if(any(binary.test==FALSE)==FALSE){binary.test<-TRUE}else{binary.test<-FALSE}
-
 	# run appropriate prep code
-	if(binary.test){
+	if(plot.control$properties[1]){	# if binary
 		result<-prep.binary(distance.matrix, plot.control$points)
 	}else{
 		result<-prep.numeric(distance.matrix, plot.control$points)}
@@ -161,7 +228,7 @@ circleplot<-function(
 	# call plot code
 	par(mar=rep(0.5, 4))	# set window attributes
 	plot(x= result$points$x, y= result$points$y, type="n", ann=FALSE, axes=FALSE, asp=1)	# plot
-	draw.curves(result, plot.control, binary.test)#$points, line.list, line.widths, line.gradient)	# add lines
+	draw.curves(result, plot.control) #$points, line.list, line.widths, line.gradient)	# add lines
 	points(result$points$x, result$points$y, 	# add points
 		pch=19, 
 		col= result$points$colour, 

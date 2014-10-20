@@ -1,34 +1,6 @@
-# function for determining how points should be arranged on the circumference of a circle
-circle.point.arrangement<-function(dataset,
-	type	# how to arrange point; either 'frequency' or 'cluster' (the default)
-	){
-	# prepare objects and defaults
-	if(missing(type))type<-"cluster"
-	circle.points<-as.data.frame(make.circle(dim(dataset)[1])[, 2:3])
+# Set of functions to prepare input objects for plotting. Returns a set of usable point and line attributes.
 
-	# work out order that points should be plotted in
-	switch(type,
-		frequency={
-			circle.sums<-apply(dataset, 2, sum)
-			circle.sums<-sort(circle.sums, decreasing=TRUE)
-			odd.even<-c(1:length(circle.sums)) %% 2
-			final.order<-c(sort(circle.sums[odd.even==1], decreasing=TRUE), sort(circle.sums[odd.even==0]))
-			circle.points$label<-names(final.order)
-			},
-		cluster={
-			connection.distance<-as.dist(1-dataset) #, method="binary")
-			result<-hclust(connection.distance)
-			circle.points$label<-colnames(dataset)[result$order]
-			}
-		)
-
-	circle.points<-circle.points[order(circle.points$label), ]
-	return(circle.points)
-	}	# end function
-
-
-
-# internal function for arranging points for plotting binary matrices 
+# internal function for arranging points for plotting binary matrices. This does all of the work in the current version.
 inner.circle<-function(
 	dataset,
 	point.attributes,
@@ -38,29 +10,47 @@ inner.circle<-function(
 	# set behaviour for included points
 	if(simple){min.value<-0}else{min.value<-1}
 
-	# subset to only points >min mentions
-	keep.rows<-as.numeric(which(apply(dataset, 1, sum)>min.value))
+	# subset to only points >min mentions (over both rows and cols - important for asymmetric matrices)
+	keep.rows<-as.numeric(which(apply(dataset, 1, FUN=function(x){sum(x, na.rm=TRUE)})>min.value))
+	keep.cols<-as.numeric(which(apply(dataset, 2, FUN=function(x){sum(x, na.rm=TRUE)})>min.value))	
+	keep.units<-sort(unique(c(keep.rows, keep.cols)))
 	dataset<-dataset[keep.rows, keep.rows]
-	dataset.dist<-as.dist(dataset)
+
+	# make a distance matrix that functions for both symmetric and asymmetric matrices
+	dataset.dist<-as.dist(2-(dataset+t(dataset))) # t() stage important for asymmetric matrices
+	data.names<-attr(dataset.dist, "Labels")
 
 	# if point attributes are set by default, these will be too large; reduce to appropriate size
 	if(dim(point.attributes)[1]>dim(dataset)[1]){
 		point.attributes<-merge(point.attributes, 
-			data.frame(label=attr(dataset.dist, "Labels"), stringsAsFactors=FALSE),
+			data.frame(label= data.names, stringsAsFactors=FALSE),
 			by="label", all=FALSE)
 		rownames(point.attributes)<-point.attributes$label
 		}
 
 	# make points for plotting
-	circle.points<-circle.point.arrangement(dataset)
+	# circle.points<-circle.point.arrangement(dataset)
+	circle.points<-as.data.frame(make.circle(attr(dataset.dist, "Size"))[, 2:3])
+	cluster.result<-hclust(dataset.dist)
+	circle.points$label<-attr(dataset.dist, "Labels")[cluster.result$order]
+		circle.points$label<-as.character(circle.points$label)
+	circle.points<-circle.points[order(circle.points$label), ]
 
 	# now make line dataset to allow drawing of lines
-	point.connections<-as.dist(dataset)
-	point.names<-attr(point.connections, "Labels")
-	line.list<-as.data.frame(cbind(t(combn(point.names, 2)), as.vector(point.connections)))
+	# point.connections<-as.dist(dataset) # replaced with dataset.dist
+	# point.names<-attr(point.connections, "Labels")
+	line.list<-as.data.frame(cbind(t(combn(data.names, 2)), as.numeric(dataset.dist)))
 		colnames(line.list)<-c("sp1", "sp2", "value")
-	line.list<-line.list[line.list$value==1, ]
-	line.list$value<-as.numeric(as.character(line.list$value))
+		for(i in 1:2){line.list[, i]<-as.character(line.list[, i])}
+	line.list$value<-2-as.numeric(as.character(line.list$value))		# how many connections
+
+	# determine the direction of these connections
+	direction.matrix<-as.dist(dataset)-as.dist(t(dataset))
+	direction.matrix[which(direction.matrix==0)]<-1
+	line.list$value<-line.list$value*as.numeric(direction.matrix)
+
+	# remove 'absent' connections
+	line.list<-line.list[-which(line.list$value==0), ]
 
 	# add attributes to circle locations
 	circle.points<-merge(circle.points, point.attributes, by="label")
@@ -74,6 +64,7 @@ inner.circle<-function(
 
 
 # anouther function for plotting binary matrices - NOT IMPLEMENTED YET
+# this will be used to add 'singletons' to an outer edge of points in circleplot().
 outer.circle<-function(
 	dataset,	# simple conversion from an adjavency matrix
 	initial.points	# result from inner.circle()
@@ -127,6 +118,7 @@ outer.circle<-function(
 	circle2<-circle2[which(circle2$allocated==1), 1:4]
 	return(list(points=circle2, frequencies= reduced.points))
 	}
+
 
 
 # get binary data into an appropriate format for plotting
