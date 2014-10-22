@@ -1,6 +1,7 @@
 # function to determine input type, and process accordingly
 check.inputs<-function(
-	input
+	input,
+	reduce
 	)
 	{
 	# set error messages
@@ -26,7 +27,7 @@ check.inputs<-function(
 	if(any(binary.test==FALSE)==FALSE){binary.test<-TRUE}else{binary.test<-FALSE}
 
 	# binary matrices may contain rows/columns with no data; remove these before continuing
-	if(binary.test){
+	if(binary.test & reduce){
 		if(class(input)=="matrix"){dataset<-input}else{dataset<-as.matrix(input)}
 		keep.rows<-as.numeric(which(apply(dataset, 1, FUN=function(x){sum(x, na.rm=TRUE)})>0))
 		keep.cols<-as.numeric(which(apply(dataset, 2, FUN=function(x){sum(x, na.rm=TRUE)})>0))	
@@ -136,16 +137,21 @@ set.plot.attributes<-function(
 # This has been replaced by a direct call to inner.circle() for now
 prep.binary<-function(
 	dataset,
-	plot.control
+	plot.control,
+	cluster
 	)
 	{
 	point.names<-attr(dataset$dist, "Labels")
 
 	# make points for plotting
 	circle.points<-as.data.frame(make.circle(attr(dataset$dist, "Size"))[, 2:3])
-	cluster.result<-hclust(dataset$dist)
-	circle.points$label<-point.names[cluster.result$order]
-		circle.points$label<-as.character(circle.points$label)
+
+	# reorder (or not)
+	if(cluster){
+		cluster.result<-hclust(dataset$dist)
+		circle.points$label<-point.names[cluster.result$order]
+	}else{circle.points$label<-point.names}
+	circle.points$label<-as.character(circle.points$label)
 	circle.points<-circle.points[order(circle.points$label), ]
 
 	# now data.frame where each row shows a line
@@ -174,17 +180,22 @@ prep.binary<-function(
 # function to prepare data for analysis if input matrix is numeric
 prep.numeric<-function(
 	dataset, 
-	plot.control
+	plot.control,
+	cluster
 	)
 	{
 	point.names<-attr(dataset$dist, "Labels")
 
 	# point info prep (Note: could add a clustering algorithm here to better represent inter-point relationships)
 	circle.points<-as.data.frame(make.circle(attr(dataset$dist, "Size"))[, 2:3])
-	# work out point order using clustering
-	connection.distance<-as.dist(1-(sqrt(dataset$dist^2)))
-	result<-hclust(connection.distance)
-	circle.points$label<-point.names[result$order]
+
+	# work out point order using clustering (or not)
+	if(cluster){
+		connection.distance<-as.dist(1-(sqrt(dataset$dist^2)))
+		result<-hclust(connection.distance)
+		circle.points$label<-point.names[result$order]
+	}else{
+		circle.points$label<-point.names}
 
 	# add point attributes
 	circle.points<-merge(circle.points, plot.control$points, by="label")

@@ -2,15 +2,19 @@
 \alias{circleplot}
 \title{Plot a distance matrix}
 \usage{
-circleplot(distance.matrix, plot.control)
+circleplot(distance.matrix, plot.control, cluster, reduce)
 }
 \arguments{
   \item{distance.matrix}{a distance matrix (class dist) containing either continuous or binary data}
 
   \item{plot.control}{a list giving information on how the plot should appear. If given, may contain any or all of the named objects given in notes (below).}
+
+  \item{cluster}{logical - should points be rearranged using hclust? Defaults to TRUE}
+
+  \item{reduce}{logical - should points with no connections be removed? Defaults to TRUE}
 }
 \value{
-Draws a plot showing the labels of the distance matrix as nodes around the circumference of a circle, with quadratic lines joining connected nodes.
+Draws a plot showing the labels of the distance matrix as nodes around the circumference of a circle, with quadratic lines joining connected nodes. Invisibly returns point and line attributes.
 }
 \description{
 Draws a circular plot of a distance matrix. 
