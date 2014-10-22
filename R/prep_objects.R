@@ -38,14 +38,14 @@ check.inputs<-function(
 
 	# check whether the input matrix is symmetric or asymmetric
 	if(binary.test){	# first for binary matrices
-		dist1<-as.dist(2-(dataset +t(dataset)))	
-		dist2<-as.dist(2-(2* dataset))
+		dist1<-as.dist(dataset +t(dataset))
+		dist2<-as.dist(2*dataset)
 		asymmetry.test<-any(c(dist1==dist2)==FALSE)
 		if(asymmetry.test){	# if asymmetric, then it is necessary to show the direction of the effect in dist
 			direction.matrix<-as.dist(dataset)-as.dist(t(dataset))
 			direction.matrix[which(direction.matrix==0)]<-1
 			distance.matrix<-dist1*direction.matrix
-		}else{distance.matrix<-dist2}
+		}else{distance.matrix<-dataset*2}
 	}else{	# then numeric matrices
 		dist1<-as.dist(as.matrix(dataset))
 		dist2<-as.dist(t(as.matrix(dataset)))
