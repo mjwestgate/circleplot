@@ -4,8 +4,8 @@
 circleplot<-function(
 	input,	# a distance matrix (class 'dist') or square matrix (class matrix)
 	cluster=TRUE, # should points be  rearranged using hclust? Defaults to true
-	reduce=TRUE # should points with no connections be removed?
-	plot.control,	# a matrix containing plot attributes. See ?circleplot
+	reduce=TRUE, # should points with no connections be removed?
+	plot.control	# a matrix containing plot attributes. See ?circleplot
 	)
 	{
 	# initial processing
