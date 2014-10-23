@@ -3,9 +3,9 @@
 # function to use the above code to draw a figure
 circleplot<-function(
 	input,	# a distance matrix (class 'dist') or square matrix (class matrix)
-	plot.control,	# a matrix containing plot attributes. See ?circleplot
 	cluster=TRUE, # should points be  rearranged using hclust? Defaults to true
 	reduce=TRUE # should points with no connections be removed?
+	plot.control,	# a matrix containing plot attributes. See ?circleplot
 	)
 	{
 	# initial processing
@@ -34,6 +34,7 @@ circleplot<-function(
 		cex= result$points$size)
 	
 	# label points
+	if(plot.control$point.labels){
 	if(max(nchar(result$points$label))<=2){
 		text(result$points$x, result$points$y, label= result$points$label, col="white", cex=0.7)
 	}else{
@@ -42,6 +43,7 @@ circleplot<-function(
 		text(result$points$x, result$points$y, label= result$points$label, 
 			pos=c(2, 4)[label.position], col="black", cex=0.7)
 		}
+	} # end label plots
 
 	invisible(result)
 	}

@@ -105,6 +105,7 @@ set.plot.attributes<-function(
 	# make a list of point and line attributes, showing the required properties
 	plot.defaults<-list(
 		points=point.defaults,
+		point.labels=TRUE,
 		line.gradient=FALSE,	# option for binary matrices only
 		line.breaks=cut.vals,
 		line.cols=line.cols,
@@ -115,7 +116,7 @@ set.plot.attributes<-function(
 	# overwrite these values where others are provided
 	if(missing(plot.control)==FALSE){
 		names.provided<-names(plot.control)
-		for(i in 1:6){
+		for(i in 1:length(plot.defaults)){
 			if(any(names.provided==names(plot.defaults)[i])){
 			entry.thisrun<-which(names.provided==names(plot.defaults)[i])
 			plot.defaults[[i]]<-plot.control[[entry.thisrun]]
