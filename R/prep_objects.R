@@ -33,7 +33,7 @@ check.inputs<-function(
 		keep.cols<-as.numeric(which(apply(dataset, 2, FUN=function(x){sum(x, na.rm=TRUE)})>0))	
 		keep.units<-sort(unique(c(keep.rows, keep.cols)))
 		dataset<-dataset[keep.units, keep.units]
-		if(class(input)=="dist"){dataset<-as.dist(input)}
+		if(class(input)=="dist"){dataset<-as.dist(dataset)}
 	}else{dataset<-input}
 
 	# check whether the input matrix is symmetric or asymmetric
