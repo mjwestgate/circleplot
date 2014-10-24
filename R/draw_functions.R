@@ -31,7 +31,7 @@ draw.curves<-function(
 		plot.locations$lines$lwd.max<-data.thisrun+min(plot.control$line.width)
 		}
 
-	# set default line widths (0-1 range)
+	# set default line widths (0-1 range) assuming curvature >0
 	x<-seq(-2, 2, length.out=100)
 	line.widths<-dnorm(x, mean=0, sd=0.5)
 	line.widths<-line.widths-min(line.widths); line.widths<-line.widths/max(line.widths)

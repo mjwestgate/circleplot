@@ -20,7 +20,8 @@ circleplot<-function(
 
 	# determine margins
 	x.lim<-c(min(result$points$x), max(result$points$x))
-	if(max(nchar(result$points$label))>2){x.lim<-colSums(rbind(x.lim, c(-0.3, 0.3)))}
+	if(plot.control$point.labels){		# extra x margins added only if those labels are to be drawn
+	if(max(nchar(result$points$label))>2){x.lim<-colSums(rbind(x.lim, c(-0.3, 0.3)))}}
 
 	# call plot code
 	par(mar=rep(0.5, 4))	# set window attributes

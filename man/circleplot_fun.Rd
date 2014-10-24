@@ -2,7 +2,7 @@
 \alias{circleplot}
 \title{Plot a distance matrix}
 \usage{
-circleplot(distance.matrix, plot.control, cluster, reduce)
+circleplot(distance.matrix, cluster, reduce, plot.control)
 }
 \arguments{
   \item{distance.matrix}{a distance matrix (class dist) containing either continuous or binary data}
