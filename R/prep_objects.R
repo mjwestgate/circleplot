@@ -204,10 +204,10 @@ prep.numeric<-function(
 		rownames(circle.points)<-circle.points$label
 
 	# line info prep
-	line.list<-as.data.frame(cbind(t(combn(point.names, 2)), as.vector(dataset$dist)), 
-		stringsAsFactors=FALSE)
+	line.list <- data.frame(t(combn(point.names, 2)),
+			as.vector(dataset$dist),
+                        stringsAsFactors = FALSE)
 	colnames(line.list)<-c("sp1", "sp2", "value")
-	line.list$value<-as.numeric(line.list$value)
 
 	# order line list by effect size
 	effect.size<-line.list$value^2
