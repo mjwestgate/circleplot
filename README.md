@@ -32,26 +32,26 @@ point.attributes<-point.attr(binary.dist)
 
 # test binary presentation
 circleplot(binary.dist)	# default grey
-circleplot(binary.dist, list(points=point.attributes))	# change point colours only
-circleplot(binary.dist, list(line.cols="blue"))	# change line colours only
-circleplot(binary.dist, list(
+circleplot(binary.dist, plot.control=list(points=point.attributes))	# change point colours only
+circleplot(binary.dist, plot.control=list(line.cols="blue"))	# change line colours only
+circleplot(binary.dist, plot.control=list(
 	line.width=3, line.curvature=0.7))	# change line appearance only
-circleplot(binary.dist, list(
+circleplot(binary.dist, plot.control=list(
 	points=point.attributes, line.gradient=TRUE))	# line colours blend between point colours
 
 # test binary asymmetric presentation
 circleplot(binary.matrix)	# default: direction indicated by change from light to dark grey
-circleplot(binary.matrix, list(line.cols="blue"))	# change arrow end of the line
-circleplot(binary.matrix, list(line.cols=c("lightsteelblue","black")))	# change both line cols
+circleplot(binary.matrix, plot.control=list(line.cols="blue"))	# change arrow end of the line
+circleplot(binary.matrix, plot.control=list(line.cols=c("lightsteelblue","black")))	# change both line cols
 
 # test numeric matrix presentation
 circleplot(numeric.dist) # default settings if min<0<max
 circleplot(numeric.dist-min(numeric.dist)) # default if min>0
-circleplot(numeric.dist, list(
+circleplot(numeric.dist, plot.control=list(
 	line.breaks=c(-20, -1, -0.5, 0, 0.5, 1, 20),
 	line.cols=brewer.pal(6, "PuOr")[6:1]))	# set own breaks and colour palette
-circleplot(numeric.dist, list(line.width=c(1, 3))) # set larger effect sizes to have thicker lines
-circleplot(numeric.dist, list(
+circleplot(numeric.dist, plot.control=list(line.width=c(1, 3))) # set larger effect sizes to have thicker lines
+circleplot(numeric.dist, plot.control=list(
 	line.width=c(1, 4),
 	line.curvature=0.8)) # add curves to above example
 
@@ -64,17 +64,17 @@ quartz(width=5, height=5)
 par(mfrow=c(2, 2))
 
 # binary symmetric
-circleplot(binary.dist, list(
+circleplot(binary.dist, plot.control=list(
 	points=point.attributes, line.gradient=TRUE,
 	line.width=3, line.curvature=0.7))
 # binary asymmetric/directional
-circleplot(binary.matrix, list(line.cols=c("lightsteelblue","black"),
+circleplot(binary.matrix, plot.control=list(line.cols=c("lightsteelblue","black"),
 	line.width=3, line.curvature=0.7))
 # +ve only numeric matrix
 circleplot(numeric.dist-min(numeric.dist),
-	list(line.width=c(1, 3), line.curvature=0.5))
+	plot.control=list(line.width=c(1, 3), line.curvature=0.5))
 # diverging numeric matrix
-circleplot(numeric.dist, list(
+circleplot(numeric.dist, plot.control=list(
 	line.width=c(1, 3), line.curvature=0.5))
 
 par(mfrow=c(1, 1))
