@@ -81,7 +81,6 @@ fit.quadratic<-function(coords)
 	}
 
 
-
 # take curved line give by fit.quadratic(), and rotate to the angle given by curve.apex()
 reposition.curve<-function(
 	curve,	# data.frame returned by fit.circle

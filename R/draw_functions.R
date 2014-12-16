@@ -25,13 +25,14 @@ draw.curves<-function(
 			plot.locations$lines$lwd.max<-plot.control$line.width
 		}else{	# if min and max given, set range
 			data.thisrun<-plot.locations$lines$value	# export data on the value of each line
-				data.thisrun<-data.thisrun*sign(data.thisrun)	# so that low values have can high widths as well
+				data.thisrun<-sqrt(data.thisrun**2)	# so that low values have can high widths as well
 			specified.range<-max(plot.control$line.width)-min(plot.control$line.width)	# range of desired values
 			data.thisrun<-data.thisrun-min(data.thisrun)	# scale data.this run to this same range
 			data.thisrun<-(data.thisrun/max(data.thisrun))*specified.range
 			plot.locations$lines$lwd.min<-data.thisrun-(data.thisrun*plot.control$line.expansion)+min(plot.control$line.width)
 			plot.locations$lines$lwd.max<-data.thisrun+min(plot.control$line.width)
 			}
+	}
 
 	# set default line widths (0-1 range) assuming expansion >0
 	x<-seq(-2, 2, length.out=100)
