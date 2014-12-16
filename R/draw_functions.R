@@ -27,8 +27,8 @@ draw.curves<-function(
 			data.thisrun<-plot.locations$lines$value	# export data on the value of each line
 				data.thisrun<-sqrt(data.thisrun**2)	# so that low values have can high widths as well
 			specified.range<-max(plot.control$line.width)-min(plot.control$line.width)	# range of desired values
-			data.thisrun<-data.thisrun-min(data.thisrun)	# scale data.this run to this same range
-			data.thisrun<-(data.thisrun/max(data.thisrun))*specified.range
+			data.thisrun<-data.thisrun-min(data.thisrun, na.rm=TRUE)	# scale data.this run to this same range
+			data.thisrun<-(data.thisrun/max(data.thisrun, na.rm=TRUE))*specified.range
 			plot.locations$lines$lwd.min<-data.thisrun-(data.thisrun*plot.control$line.expansion)+min(plot.control$line.width)
 			plot.locations$lines$lwd.max<-data.thisrun+min(plot.control$line.width)
 			}

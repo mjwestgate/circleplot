@@ -114,8 +114,6 @@ set.plot.attributes<-function(
 		line.curvature=list(add=0.25, multiply=0.35),	# new command to set height of each quadratic curve
 		na.control=list(lwd=1, lty=2, col="grey")
 		)
-
-	# ADD NA SUPPORT
 	
 	# overwrite these values where others are provided
 	if(missing(plot.control)==FALSE){
