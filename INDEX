@@ -1,2 +1,3 @@
 circleplot	Draw a plot
+add.key		Draw a simple key for a plot
 point.attr	Generate point colours

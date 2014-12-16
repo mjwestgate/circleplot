@@ -8,8 +8,8 @@ draw.curves<-function(
 	# calculate inter-point distances, to allow setting of pc.scale (to calculate curvature of lines relative to origin)
 	point.distance<-dist(plot.locations$points[, 1:2])
 	scale.distance<-point.distance-min(point.distance)
-		multiplier<-0.35; add<-0.25
-	scale.distance<-((scale.distance/max(scale.distance))*multiplier)+add
+	scale.distance<-((scale.distance/max(scale.distance))*
+		plot.control$line.curvature[[2]])+plot.control$line.curvature[[1]]
 	scale.distance<-as.matrix(scale.distance)
 
 	# set line colours. Note that this works even for binary matrices, but is later ignored if line.gradient==FALSE
@@ -18,20 +18,20 @@ draw.curves<-function(
 
 	# add min and max widths per line
 	if(dataset$binary[1]){	# binary
-		if(length(plot.control$line.width)==2){plot.control$line.width<-plot.control$line.width[2]}} # fix if too many vals
+	if(length(plot.control$line.width)==2){plot.control$line.width<-max(plot.control$line.width)}} # fix if too many vals
 	if(length(plot.control$line.width)==1){	# for a single value, make the line width a maximum value
-		plot.locations$lines$lwd.min<-plot.control$line.width-(plot.control$line.width*plot.control$line.curvature)
+		plot.locations$lines$lwd.min<-plot.control$line.width-(plot.control$line.width*plot.control$line.expansion)
 		plot.locations$lines$lwd.max<-plot.control$line.width
 	}else{	# otherwise, set range
 		data.thisrun<-plot.locations$lines$value	# export data on the value of each line
 		specified.range<-max(plot.control$line.width)-min(plot.control$line.width)	# range of desired values
 		data.thisrun<-data.thisrun-min(data.thisrun)	# scale data.this run to this same range
 		data.thisrun<-(data.thisrun/max(data.thisrun))*specified.range
-		plot.locations$lines$lwd.min<-data.thisrun-(data.thisrun*plot.control$line.curvature)+min(plot.control$line.width)
+		plot.locations$lines$lwd.min<-data.thisrun-(data.thisrun*plot.control$line.expansion)+min(plot.control$line.width)
 		plot.locations$lines$lwd.max<-data.thisrun+min(plot.control$line.width)
 		}
 
-	# set default line widths (0-1 range) assuming curvature >0
+	# set default line widths (0-1 range) assuming expansion >0
 	x<-seq(-2, 2, length.out=100)
 	line.widths<-dnorm(x, mean=0, sd=0.5)
 	line.widths<-line.widths-min(line.widths); line.widths<-line.widths/max(line.widths)
@@ -50,7 +50,7 @@ draw.curves<-function(
 		coords.scaled<-triangle.coords(coords, distance.thisrun) # what coordinates should the curve be fit to?
 
 		# calculate the curve that fits between these points.
-		# Note that if there are an even number of points, some will pass through the intercept, causing code to fail
+		# Note that if there are an even number of points, some will pass through the intercept, causing earlier code to fail
 		if(coords.scaled$y[2]>0.0001){
 			apex<-curve.apex(coords, distance.thisrun)
 			curve.coords<-fit.quadratic(coords.scaled)
@@ -60,6 +60,15 @@ draw.curves<-function(
 				x=seq(coords$x[1], coords$x[2], length.out=101), 
  				y=seq(coords$y[1], coords$y[2], length.out=101))
 		} 
+
+		# set NA behaviour
+		if(is.na(plot.locations$lines$value[i])){
+			if(is.list(plot.control$na.control)){
+				na.plot<-list(x=new.curve$x, y=new.curve$y)
+				na.plot<-append(na.plot, plot.control$na.control)
+				do.call(lines, na.plot)
+				}
+		}else{	# i.e. if this line is not a missing value (i.e. most cases).
 
 		# set line widths
 		lwd.range<-plot.locations$lines$lwd.max[i]-plot.locations$lines$lwd.min[i]
@@ -107,5 +116,7 @@ draw.curves<-function(
 			y0= new.curve$y[1:100], y1= new.curve$y[2:101],
 			col= colours.final,
 			lwd= line.widths.thisrun)
+
+		}	# end if(is.na())==F
 		}	# end loop
 	}	# end function

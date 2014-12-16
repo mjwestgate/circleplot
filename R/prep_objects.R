@@ -49,7 +49,7 @@ check.inputs<-function(
 	}else{	# then numeric matrices
 		dist1<-as.dist(as.matrix(dataset))
 		dist2<-as.dist(t(as.matrix(dataset)))
-		asymmetry.test<-any(c(dist1==dist2)==FALSE)
+		asymmetry.test<-any(c(dist1==dist2)==FALSE, na.rm=TRUE)
 		if(asymmetry.test){
 			dist1[1:length(dist1)]<-apply(cbind(as.vector(dist1), as.vector(dist2)), 1, mean)}
 		distance.matrix<-dist1
@@ -109,9 +109,13 @@ set.plot.attributes<-function(
 		line.gradient=FALSE,	# option for binary matrices only
 		line.breaks=cut.vals,
 		line.cols=line.cols,
-		line.curvature=0.3,
-		line.width=1
+		line.width=1,
+		line.expansion=0.3,	# formerly line.curvature
+		line.curvature=list(add=0.25, multiply=0.35),	# new command to set height of each quadratic curve
+		na.control=list(lwd=1, lty=2, col="grey")
 		)
+
+	# ADD NA SUPPORT
 	
 	# overwrite these values where others are provided
 	if(missing(plot.control)==FALSE){
@@ -143,6 +147,7 @@ prep.binary<-function(
 	)
 	{
 	point.names<-attr(dataset$dist, "Labels")
+	if(any(is.na(as.numeric(dataset$dist))))cluster<-FALSE
 
 	# make points for plotting
 	circle.points<-as.data.frame(make.circle(attr(dataset$dist, "Size"))[, 2:3])
@@ -166,6 +171,10 @@ prep.binary<-function(
 	# remove 'absent' connections
 	line.list<-line.list[-which(line.list$value==0), ]
 
+	# place NA values first (so they are underneath drawn values)
+	line.list<-line.list[c(which(is.na(line.list$value)==TRUE), 
+		which(is.na(line.list$value)==FALSE)), ]
+
 	# add attributes to circle locations
 	circle.points<-merge(circle.points, plot.control$points, by="label")
 		circle.points<-circle.points[, c(2, 3, 1, 4, 5)]
@@ -186,6 +195,7 @@ prep.numeric<-function(
 	)
 	{
 	point.names<-attr(dataset$dist, "Labels")
+	if(any(is.na(as.numeric(dataset$dist))))cluster<-FALSE
 
 	# point info prep (Note: could add a clustering algorithm here to better represent inter-point relationships)
 	circle.points<-as.data.frame(make.circle(attr(dataset$dist, "Size"))[, 2:3])
@@ -212,6 +222,10 @@ prep.numeric<-function(
 	# order line list by effect size
 	effect.size<-line.list$value^2
 	line.list<-line.list[order(effect.size), ]
+
+	# place NA values first (so they are underneath drawn values)
+	line.list<-line.list[c(which(is.na(line.list$value)==TRUE), 
+		which(is.na(line.list$value)==FALSE)), ]
 
 	return(list(points=circle.points, lines=line.list))
 	}
