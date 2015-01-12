@@ -143,7 +143,7 @@ set.plot.attributes<-function(
 
 	# correct line.width if necessary
 	# only change if defaults have been overwritten with poor inputs
-	if(length(plot.defaults$line.widths)!=(length(plot.control$line.breaks)-1)){	
+	if(length(plot.defaults$line.widths)!=(length(plot.defaults$line.breaks)-1)){	
 		if(length(plot.defaults$line.widths)==1){
 			plot.defaults$line.widths<-rep(plot.defaults$line.widths, length(line.cols))
 		}else{if(length(plot.defaults$line.widths)>1){	# i.e. if a min and max is given, ignore and choose only the max value
