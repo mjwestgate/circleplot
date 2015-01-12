@@ -6,33 +6,38 @@ draw.curves<-function(
 	)
 	{
 	# calculate inter-point distances, to allow setting of pc.scale (to calculate curvature of lines relative to origin)
-	point.distance<-dist(plot.locations$points[, 1:2])
+	point.distance<-dist(plot.locations$points[, 2:3])
 	scale.distance<-point.distance-min(point.distance)
 	scale.distance<-((scale.distance/max(scale.distance))*
-		plot.control$line.curvature[[2]])+plot.control$line.curvature[[1]]
+		plot.control$line.curvature[2])+plot.control$line.curvature[1]
 	scale.distance<-as.matrix(scale.distance)
 
-	# set line colours. Note that this works even for binary matrices, but is later ignored if line.gradient==FALSE
+	# set line colours & widths. 
+	# Note that this works even for binary matrices, but is later ignored if line.gradient==FALSE
 	line.cuts<-cut(plot.locations$lines$value, plot.control$line.breaks, include.lowest=TRUE, labels=FALSE)
 	plot.locations$lines$colour<-plot.control$line.cols[line.cuts]
 
+	# new code for setting line widths
+	plot.locations$lines$lwd.max<-plot.control$line.width[line.cuts]	
+	plot.locations$lines$lwd.min<-plot.control$line.width[line.cuts]*plot.control$line.expansion
+	
 	# add min and max widths per line
-	if(dataset$binary[1]){	# binary
-		if(length(plot.control$line.width)==2){plot.control$line.width<-max(plot.control$line.width)} # fix if too many vals
-	}else{	# numeric
-		if(length(plot.control$line.width)==1){	# for a single value, make the line width a maximum value
-			plot.locations$lines$lwd.min<-plot.control$line.width-(plot.control$line.width*plot.control$line.expansion)
-			plot.locations$lines$lwd.max<-plot.control$line.width
-		}else{	# if min and max given, set range
-			data.thisrun<-plot.locations$lines$value	# export data on the value of each line
-				data.thisrun<-sqrt(data.thisrun**2)	# so that low values have can high widths as well
-			specified.range<-max(plot.control$line.width)-min(plot.control$line.width)	# range of desired values
-			data.thisrun<-data.thisrun-min(data.thisrun, na.rm=TRUE)	# scale data.this run to this same range
-			data.thisrun<-(data.thisrun/max(data.thisrun, na.rm=TRUE))*specified.range
-			plot.locations$lines$lwd.min<-data.thisrun-(data.thisrun*plot.control$line.expansion)+min(plot.control$line.width)
-			plot.locations$lines$lwd.max<-data.thisrun+min(plot.control$line.width)
-			}
-	}
+	#if(dataset$binary[1]){	# binary
+	#	if(length(plot.control$line.width)==2){plot.control$line.width<-max(plot.control$line.width)} # fix if too many vals
+	#}else{	# numeric
+	#	if(length(plot.control$line.width)==1){	# for a single value, make the line width a maximum value
+	#		plot.locations$lines$lwd.min<-plot.control$line.width-(plot.control$line.width*plot.control$line.expansion)
+	#		plot.locations$lines$lwd.max<-plot.control$line.width
+	#	}else{	# if min and max given, set range
+	#		data.thisrun<-plot.locations$lines$value	# export data on the value of each line
+	#			data.thisrun<-sqrt(data.thisrun**2)	# so that low values have can high widths as well
+	#		specified.range<-max(plot.control$line.width)-min(plot.control$line.width)	# range of desired values
+	#		data.thisrun<-data.thisrun-min(data.thisrun, na.rm=TRUE)	# scale data.this run to this same range
+	#		data.thisrun<-(data.thisrun/max(data.thisrun, na.rm=TRUE))*specified.range
+	#		plot.locations$lines$lwd.min<-data.thisrun-(data.thisrun*plot.control$line.expansion)+min(plot.control$line.width)
+	#		plot.locations$lines$lwd.max<-data.thisrun+min(plot.control$line.width)
+	#		}
+	#}
 
 	# set default line widths (0-1 range) assuming expansion >0
 	x<-seq(-2, 2, length.out=100)
@@ -96,8 +101,8 @@ draw.curves<-function(
 
 				if(plot.control$line.gradient){		# lines coloured according to a gradient
 					# get line colours from input$points
-					color1<-plot.locations$points$colour[row1]
-					color2<-plot.locations$points$colour[row2]
+					color1<-plot.locations$points$col[row1]
+					color2<-plot.locations$points$col[row2]
 					color.matrix<-col2rgb(c(color1, color2))
 					color.matrix.expanded<-apply(color.matrix, 1, function(x){seq(x[1], x[2], length.out=100)})
 					colours.final<-rgb(color.matrix.expanded, maxColorValue=255)

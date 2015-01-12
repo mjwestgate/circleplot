@@ -1,9 +1,9 @@
 Package: circleplot
-Version: 0.2
+Version: 0.3
 Date: 2014-10-08
 Title: Circular plots of distance and association matrices
 Author: Martin J. Westgate <martinjwestgate@gmail.com>
 Maintainer: Martin J. Westgate <martinjwestgate@gmail.com>
-Description: Tools for automated plotting of numeric or binary matrices.
+Description: Tools for plotting numeric or binary matrices.
 Depends: R (>= 3.1.0), RColorBrewer
 License: GPL-2

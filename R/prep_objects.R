@@ -79,11 +79,14 @@ set.plot.attributes<-function(
 	{
 	distance.matrix<-input$dist
 
+	## SET DEFAULTS ##
 	# generate a some default values for points
+	n.points<-attr(distance.matrix, "Size")
 	point.defaults<-data.frame(
 			label=attr(distance.matrix, "Labels"),
-			colour=rep(rgb(t(col2rgb("grey30")), maxColorValue=255), attr(distance.matrix, "Size")),
-			size=rep(2, attr(distance.matrix, "Size")),
+			pch=19,
+			col=rep(rgb(t(col2rgb("grey30")), maxColorValue=255), n.points),
+			cex=2,
 			stringsAsFactors=FALSE)
 	rownames(point.defaults)<-point.defaults$label
 
@@ -109,12 +112,13 @@ set.plot.attributes<-function(
 		line.gradient=FALSE,	# option for binary matrices only
 		line.breaks=cut.vals,
 		line.cols=line.cols,
-		line.width=1,
-		line.expansion=0.3,	# formerly line.curvature
-		line.curvature=list(add=0.25, multiply=0.35),	# new command to set height of each quadratic curve
+		line.width=rep(1, length(line.cols)),
+		line.expansion=0,	# formerly line.curvature
+		line.curvature=c(add=0.25, multiply=0.35),	# new command to set height of each quadratic curve
 		na.control=list(lwd=1, lty=2, col="grey")
 		)
-	
+
+	## ALLOW USER SPECIFICATION ##	
 	# overwrite these values where others are provided
 	if(missing(plot.control)==FALSE){
 		names.provided<-names(plot.control)
@@ -124,6 +128,7 @@ set.plot.attributes<-function(
 			plot.defaults[[i]]<-plot.control[[entry.thisrun]]
 			}}}
 
+	## ERROR AVOIDANCE ##
 	# make up to two colours if asymmetry.test==TRUE, and two points have not yet been provided
 	default.directional.cols<-c("grey80", "grey10")
 	if(input$asymmetric){
@@ -131,7 +136,32 @@ set.plot.attributes<-function(
 			if(plot.defaults$line.cols=="grey30"){plot.defaults$line.cols<-default.directional.cols
 			}else{plot.defaults$line.cols<-c(default.directional.cols[1], plot.defaults$line.cols)}}}
 
-	return(plot.defaults)
+	# correct line.width if necessary
+	if(length(plot.defaults$line.width!=length(line.cols))){	# only change if defaults have been overwritten with poor inputs
+		if(length(plot.defaults$line.width==1)){
+			plot.defaults$line.width<-rep(plot.defaults$line.width, length(line.cols))
+		}else{if(plot.defaults$line.width>1){	# i.e. if a min and max is given, ignore and choose only the max value
+			plot.defaults$line.width<-rep(max(plot.defaults$line.width, na.rm=TRUE), length(line.cols))
+		}}}
+
+	# Invert direction of line.expansion
+	plot.defaults$line.expansion<-1-plot.defaults$line.expansion
+	# This is a bit pointless, but is included for consistency with earlier versions.
+
+	# if line.curvature is a list, convert to vector	
+	if(is.list(plot.defaults$line.curvature)){plot.defaults$line.curvature<-unlist(plot.defaults$line.curvature)}
+
+	# if point.attr are <v0.3 standard, convert to new format (i.e. for passing to do.call(points, ...)
+	if(any(colnames(plot.defaults$points)=="colour")){
+		x<-which(colnames(plot.defaults$points)=="colour")
+		colnames(plot.defaults$points)[x]<-"col"}
+	if(any(colnames(plot.defaults$points)=="size")){
+		x<-which(colnames(plot.defaults$points)=="size")
+		colnames(plot.defaults$points)[x]<-"cex"}
+	if(any(colnames(plot.defaults$points)=="pch")==FALSE){
+		plot.defaults$points$pch<-rep(19, dim(plot.defaults$points)[1])}
+
+	return(plot.defaults) # return result
 	}
 	
 
@@ -175,7 +205,7 @@ prep.binary<-function(
 
 	# add attributes to circle locations
 	circle.points<-merge(circle.points, plot.control$points, by="label")
-		circle.points<-circle.points[, c(2, 3, 1, 4, 5)]
+		# circle.points<-circle.points[, c(2, 3, 1, 4:dim(circle.points)[2])]
 		rownames(circle.points)<-circle.points$label
 
 	# export
@@ -195,7 +225,7 @@ prep.numeric<-function(
 	point.names<-attr(dataset$dist, "Labels")
 	if(any(is.na(as.numeric(dataset$dist))))cluster<-FALSE
 
-	# point info prep (Note: could add a clustering algorithm here to better represent inter-point relationships)
+	# point info prep 
 	circle.points<-as.data.frame(make.circle(attr(dataset$dist, "Size"))[, 2:3])
 
 	# work out point order using clustering (or not)
@@ -208,7 +238,7 @@ prep.numeric<-function(
 
 	# add point attributes
 	circle.points<-merge(circle.points, plot.control$points, by="label")
-		circle.points<-circle.points[, c(2, 3, 1, 4, 5)]
+		# circle.points<-circle.points[, c(2, 3, 1, 4:dim(circle.points)[2])]
 		rownames(circle.points)<-circle.points$label
 
 	# line info prep

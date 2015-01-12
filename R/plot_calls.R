@@ -14,7 +14,7 @@ circleplot<-function(
 
 	# run appropriate prep code
 	if(dataset$binary){	# if binary
-		result<-prep.binary(dataset, plot.control, cluster) # prep.binary(dataset, plot.control$points)
+		result<-prep.binary(dataset, plot.control, cluster)
 	}else{
 		result<-prep.numeric(dataset, plot.control, cluster)}
 
@@ -29,10 +29,7 @@ circleplot<-function(
 		xlim=x.lim,
 		type="n", ann=FALSE, axes=FALSE, asp=1)	# plot
 	draw.curves(dataset, result, plot.control) 	# add lines
-	points(result$points$x, result$points$y, 	# add points
-		pch=19, 
-		col= result$points$colour, 
-		cex= result$points$size)
+	do.call(points, as.list(result$points[, -1]))
 	
 	# label points
 	if(plot.control$point.labels){
@@ -63,9 +60,11 @@ point.attr<-function(distance.matrix)
 		)[1:length(labels)]
 	point.attributes<-data.frame(
 			label= labels,
-			colour=color.hex,
-			size=rep(3, length(labels)),
+			pch=19,
+			col=color.hex,
+			cex=3,
 			stringsAsFactors=FALSE)
+	return(point.attributes)
 	}
 
 
@@ -79,6 +78,7 @@ add.key<-function(circleplot.result,
 	# set inputs
 	breaks<-circleplot.result$plot.control$line.breaks
 	colours<-circleplot.result$plot.control$line.cols
+	widths<-circleplot.result$plot.control$line.width
 	if(missing(xlim))xlim<-c(0.4, 1)
 	if(missing(cex))cex<-1
 
@@ -96,7 +96,7 @@ add.key<-function(circleplot.result,
 	# draw
 	plot(c(1)~c(1), ann=FALSE, axes=FALSE, type="n", xlim= xlim, ylim=c(-0.1, 1.1))
 	for(i in 1: length(colours)){
-		lines(x=c(0.5, 1), y=rep(y.vals[i], 2), col=colours[i])
+		lines(x=c(0.5, 1), y=rep(y.vals[i], 2), col=colours[i], lwd= widths[i])
 		text(x=0.5, y=y.vals[i], label=paste(breaks[i], "-", breaks[i+1], sep=" "), pos=2, cex=cex)}
 	
 	# add NA line if applicable
