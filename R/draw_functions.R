@@ -18,8 +18,8 @@ draw.curves<-function(
 	plot.locations$lines$colour<-plot.control$line.cols[line.cuts]
 
 	# new code for setting line widths
-	plot.locations$lines$lwd.max<-plot.control$line.width[line.cuts]	
-	plot.locations$lines$lwd.min<-plot.control$line.width[line.cuts]*plot.control$line.expansion
+	plot.locations$lines$lwd.max<-plot.control$line.widths[line.cuts]	
+	plot.locations$lines$lwd.min<-plot.control$line.widths[line.cuts]*plot.control$line.expansion
 	
 	# add min and max widths per line
 	#if(dataset$binary[1]){	# binary

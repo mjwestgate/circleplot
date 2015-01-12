@@ -78,7 +78,7 @@ add.key<-function(circleplot.result,
 	# set inputs
 	breaks<-circleplot.result$plot.control$line.breaks
 	colours<-circleplot.result$plot.control$line.cols
-	widths<-circleplot.result$plot.control$line.width
+	widths<-circleplot.result$plot.control$line.widths
 	if(missing(xlim))xlim<-c(0.4, 1)
 	if(missing(cex))cex<-1
 

@@ -112,7 +112,7 @@ set.plot.attributes<-function(
 		line.gradient=FALSE,	# option for binary matrices only
 		line.breaks=cut.vals,
 		line.cols=line.cols,
-		line.width=rep(1, length(line.cols)),
+		line.widths=rep(1, length(line.cols)),
 		line.expansion=0,	# formerly line.curvature
 		line.curvature=c(add=0.25, multiply=0.35),	# new command to set height of each quadratic curve
 		na.control=list(lwd=1, lty=2, col="grey")
@@ -121,6 +121,11 @@ set.plot.attributes<-function(
 	## ALLOW USER SPECIFICATION ##	
 	# overwrite these values where others are provided
 	if(missing(plot.control)==FALSE){
+		# for backwards compatability, allow line.width (singular) instead of line.widths (plural) as input
+		if(any(names(plot.control)=="line.width")){
+			x<-which(names(plot.control)=="line.width")
+			names(plot.control)[x]<-"line.widths"}
+		# replace default plot.control info with any user-specified arguments
 		names.provided<-names(plot.control)
 		for(i in 1:length(plot.defaults)){
 			if(any(names.provided==names(plot.defaults)[i])){
@@ -137,11 +142,11 @@ set.plot.attributes<-function(
 			}else{plot.defaults$line.cols<-c(default.directional.cols[1], plot.defaults$line.cols)}}}
 
 	# correct line.width if necessary
-	if(length(plot.defaults$line.width!=length(line.cols))){	# only change if defaults have been overwritten with poor inputs
-		if(length(plot.defaults$line.width==1)){
-			plot.defaults$line.width<-rep(plot.defaults$line.width, length(line.cols))
-		}else{if(plot.defaults$line.width>1){	# i.e. if a min and max is given, ignore and choose only the max value
-			plot.defaults$line.width<-rep(max(plot.defaults$line.width, na.rm=TRUE), length(line.cols))
+	if(length(plot.defaults$line.widths)!=length(line.cols)){	# only change if defaults have been overwritten with poor inputs
+		if(length(plot.defaults$line.widths)==1){
+			plot.defaults$line.widths<-rep(plot.defaults$line.widths, length(line.cols))
+		}else{if(length(plot.defaults$line.widths)>1){	# i.e. if a min and max is given, ignore and choose only the max value
+			plot.defaults$line.widths<-rep(max(plot.defaults$line.widths, na.rm=TRUE), length(line.cols))
 		}}}
 
 	# Invert direction of line.expansion
