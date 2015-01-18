@@ -51,7 +51,7 @@ curve.apex<-function(coords, pc.scale=0.5)
 	result<-data.frame(
 		x=c(mean.point[1], as.numeric(mean.point[1]-(adj*sign(mean.point[1])))), 
 		y=c(mean.point[2], as.numeric(mean.point[2]-(opp*sign(mean.point[1])))))
-		# note: *sign() necessary to avoid -ve x vals giving apex(s) that are outside of the cirlce
+		# note: *sign() necessary to avoid -ve x vals giving apex(s) that are outside of the circle
 	rownames(result)<-c("mean", "apex")
 	output<-list(as.numeric(angle2), result)
 		names(output)<-c("angle", "coordinates")
@@ -87,7 +87,7 @@ reposition.curve<-function(
 	apex		# list returned by curve.apex
 	)
 	{
-	adjusted.angle<-apex$angle-(90*pi/180)	# becuase your curve faces down, not right
+	adjusted.angle<-apex$angle-(90*pi/180)	# because your curve faces down, not right
 	# if(apex$coordinates$x[2]>0){adjusted.angle<-adjusted.angle+(pi/180)}
 	curve$y<-curve$y-curve$y[51]	# set apex =0,0
 	if(apex$coordinates$x[2]<0){

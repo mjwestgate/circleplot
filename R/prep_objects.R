@@ -146,7 +146,7 @@ set.plot.attributes<-function(
 	if(length(plot.defaults$line.widths)!=(length(plot.defaults$line.breaks)-1)){	
 		if(length(plot.defaults$line.widths)==1){
 			plot.defaults$line.widths<-rep(plot.defaults$line.widths, length(line.cols))
-		}else{if(length(plot.defaults$line.widths)>1){	# i.e. if a min and max is given, ignore and choose only the max value
+		}else{if(length(plot.defaults$line.widths)>1){	# i.e. if a min and max is given, choose only the max value
 			plot.defaults$line.widths<-rep(max(plot.defaults$line.widths, na.rm=TRUE), length(line.cols))
 		}}}
 
@@ -166,6 +166,8 @@ set.plot.attributes<-function(
 		colnames(plot.defaults$points)[x]<-"cex"}
 	if(any(colnames(plot.defaults$points)=="pch")==FALSE){
 		plot.defaults$points$pch<-rep(19, dim(plot.defaults$points)[1])}
+	# ensure that labels are characters, not vectors
+	plot.defaults$points$label<-as.character(plot.defaults$points$label)
 
 	return(plot.defaults) # return result
 	}
