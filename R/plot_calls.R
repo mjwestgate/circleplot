@@ -5,9 +5,13 @@ circleplot<-function(
 	input,	# a distance matrix (class 'dist') or square matrix (class matrix)
 	cluster=TRUE, # should points be  rearranged using hclust? Defaults to true
 	reduce=TRUE, # should points with no connections be removed?
-	plot.control	# a matrix containing plot attributes. See ?circleplot
+	plot.control,	# a matrix containing plot attributes. See ?circleplot
+	mar,
+	...	# passed to par()
 	)
 	{
+	if(missing(mar))mar<-rep(0.5, 4)
+
 	# initial processing
 	dataset<-check.inputs(input, reduce)
 	plot.control<-set.plot.attributes(dataset, plot.control) # set plot attributes/defaults
@@ -20,11 +24,16 @@ circleplot<-function(
 
 	# determine margins
 	x.lim<-c(min(result$points$x), max(result$points$x))
-	if(plot.control$point.labels){		# extra x margins added only if those labels are to be drawn
-	if(max(nchar(result$points$label))>2){x.lim<-colSums(rbind(x.lim, c(-0.3, 0.3)))}}
+	# extra x margins added
+	label.suppress.test<-is.logical(plot.control$point.labels) & 	length(plot.control$point.labels)==1
+	# note this works beacuse set.plot.attributes allows FALSE as the only logical operator to point.labels
+	if(label.suppress.test==FALSE){
+		max.label<-max(nchar(result$points$labels))
+		x.expansion<-max.label*0.03
+		x.lim<-colSums(rbind(x.lim, c(-x.expansion, x.expansion)))}
 
 	# call plot code
-	par(mar=rep(0.5, 4))	# set window attributes
+	par(mar=mar, ...)	# set window attributes
 	plot(x= result$points$x, y= result$points$y, 
 		xlim=x.lim,
 		type="n", ann=FALSE, axes=FALSE, asp=1)	# plot
@@ -32,18 +41,13 @@ circleplot<-function(
 	do.call(points, as.list(result$points[, -1]))
 	
 	# label points
-	if(plot.control$point.labels){
-	if(max(nchar(result$points$label))<=2){
-		text(result$points$x, result$points$y, label= result$points$label, col="white", cex=0.7)
-	}else{
-		label.position<-cut(result$points$x, breaks=c(min(result$points$x), 0, max(result$points$x)), 
-			include.lowest=TRUE, labels=FALSE)
-		text(result$points$x, result$points$y, label= result$points$label, 
-			pos=c(2, 4)[label.position], col="black", cex=0.7)
-		}
-	} # end label plots
-
-	invisible(list(locations=result, plot.control=plot.control))
+	if(label.suppress.test==FALSE){
+		labels.list<-split(plot.control$point.labels, 1:nrow(plot.control$point.labels))
+		invisible(lapply(labels.list, FUN=function(x){do.call(text, x)}))}
+	
+	# return information as needed
+	output<-list(locations=result, plot.control=plot.control)
+	return(invisible(output))
 	}
 
 
@@ -59,7 +63,7 @@ point.attr<-function(distance.matrix)
 		brewer.pal(8, "Set2")
 		)[1:length(labels)]
 	point.attributes<-data.frame(
-			label= labels,
+			labels= labels,
 			pch=19,
 			col=color.hex,
 			cex=3,
@@ -97,13 +101,13 @@ add.key<-function(circleplot.result,
 	plot(c(1)~c(1), ann=FALSE, axes=FALSE, type="n", xlim= xlim, ylim=c(-0.1, 1.1))
 	for(i in 1: length(colours)){
 		lines(x=c(0.5, 1), y=rep(y.vals[i], 2), col=colours[i], lwd= widths[i])
-		text(x=0.5, y=y.vals[i], label=paste(breaks[i], "-", breaks[i+1], sep=" "), pos=2, cex=cex)}
+		text(x=0.5, y=y.vals[i], labels=paste(breaks[i], "-", breaks[i+1], sep=" "), pos=2, cex=cex)}
 	
 	# add NA line if applicable
 	if(plot.nas){
 		plot.list<-append(list(x=c(0.5, 1), y=rep(0, 2)), circleplot.result$plot.control$na.control)
 		do.call(lines, plot.list)
-		text(x=0.5, y=0, label="NA", pos=2, cex=cex)
+		text(x=0.5, y=0, labels="NA", pos=2, cex=cex)
 		}
 
 	}	# end function

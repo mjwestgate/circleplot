@@ -3,11 +3,15 @@
 # make a circle of specified size
 make.circle<-function(
 	n,	# number of points, equally spaced around the edge of a circle
-	alpha,	# offset angle, in radians
+	alpha,	# offset angle, in degrees
 	k)	# scaling value - larger for bigger circles. defaults to 1
 	{
 	if(missing(k))k<-1
-	if(missing(alpha))alpha<-0.4
+	if(missing(alpha))alpha<-22.91	# as original default was 0.4 radians
+
+	# convert to radians
+	alpha<-alpha*(pi/180)
+
 	# create output dataframe
 	values<-as.data.frame(matrix(data=NA, nrow=n, ncol=3))
 		colnames(values)<-c("theta", "x", "y")
