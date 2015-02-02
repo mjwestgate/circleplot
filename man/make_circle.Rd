@@ -1,4 +1,4 @@
-\name{make_circle}
+\name{make.circle}
 \alias{make_circle}
 \title{Generate coordinates of points on the circumference of a circle}
 \usage{
