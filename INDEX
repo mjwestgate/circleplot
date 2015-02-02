@@ -1,3 +1,4 @@
-circleplot	Draw a plot
 add.key		Draw a simple key for a plot
+circleplot	Draw a plot
+make.circle	return a set of points on the circumference of a circle
 point.attr	Generate point colours
