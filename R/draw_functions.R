@@ -21,28 +21,15 @@ draw.curves<-function(
 	plot.locations$lines$lwd.max<-plot.control$line.widths[line.cuts]	
 	plot.locations$lines$lwd.min<-plot.control$line.widths[line.cuts]*plot.control$line.expansion
 	
-	# add min and max widths per line
-	#if(dataset$binary[1]){	# binary
-	#	if(length(plot.control$line.width)==2){plot.control$line.width<-max(plot.control$line.width)} # fix if too many vals
-	#}else{	# numeric
-	#	if(length(plot.control$line.width)==1){	# for a single value, make the line width a maximum value
-	#		plot.locations$lines$lwd.min<-plot.control$line.width-(plot.control$line.width*plot.control$line.expansion)
-	#		plot.locations$lines$lwd.max<-plot.control$line.width
-	#	}else{	# if min and max given, set range
-	#		data.thisrun<-plot.locations$lines$value	# export data on the value of each line
-	#			data.thisrun<-sqrt(data.thisrun**2)	# so that low values have can high widths as well
-	#		specified.range<-max(plot.control$line.width)-min(plot.control$line.width)	# range of desired values
-	#		data.thisrun<-data.thisrun-min(data.thisrun, na.rm=TRUE)	# scale data.this run to this same range
-	#		data.thisrun<-(data.thisrun/max(data.thisrun, na.rm=TRUE))*specified.range
-	#		plot.locations$lines$lwd.min<-data.thisrun-(data.thisrun*plot.control$line.expansion)+min(plot.control$line.width)
-	#		plot.locations$lines$lwd.max<-data.thisrun+min(plot.control$line.width)
-	#		}
-	#}
-
 	# set default line widths (0-1 range) assuming expansion >0
 	x<-seq(-2, 2, length.out=100)
 	line.widths<-dnorm(x, mean=0, sd=0.5)
 	line.widths<-line.widths-min(line.widths); line.widths<-line.widths/max(line.widths)
+
+	# add line to remove NA values if plot.control$na.control is not a list
+	# this reduces the time taken to draw plots with many NA values
+	if(class(plot.control$na.control)!="list"){
+		plot.locations$lines<-plot.locations$lines[-which(is.na(plot.locations$lines$value)==TRUE), ]}
 
 	# loop to draw lines of requisite location and colour
 	for(i in 1:dim(plot.locations$lines)[1])	

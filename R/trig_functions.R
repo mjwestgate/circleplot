@@ -49,12 +49,13 @@ curve.apex<-function(coords, pc.scale=0.5)
 	mean.point<-c(x=mean(coords$x), y=mean(coords$y))
 	angle2<-atan(mean.point[2]/mean.point[1])	# angle between 0,0 and mean.point
 	#	angle2*(180/pi)
-	hyp<-sqrt(mean.point[1]^2+ mean.point[2]^2)*pc.scale
+	hyp<-as.numeric(sqrt(mean.point[1]^2+ mean.point[2]^2)*pc.scale)
 	adj<-as.numeric(hyp*cos(angle2))
 	opp<-as.numeric(hyp*sin(angle2))
+	multiplier<-sign(mean.point[1]); if(multiplier==0)multiplier<-1
 	result<-data.frame(
-		x=c(mean.point[1], as.numeric(mean.point[1]-(adj*sign(mean.point[1])))), 
-		y=c(mean.point[2], as.numeric(mean.point[2]-(opp*sign(mean.point[1])))))
+		x=c(mean.point[1], as.numeric(mean.point[1]-(adj*multiplier))), 
+		y=c(mean.point[2], as.numeric(mean.point[2]-(opp*multiplier))))
 		# note: *sign() necessary to avoid -ve x vals giving apex(s) that are outside of the circle
 	rownames(result)<-c("mean", "apex")
 	output<-list(as.numeric(angle2), result)
@@ -92,16 +93,21 @@ reposition.curve<-function(
 	)
 	{
 	adjusted.angle<-apex$angle-(90*pi/180)	# because your curve faces down, not right
-	# if(apex$coordinates$x[2]>0){adjusted.angle<-adjusted.angle+(pi/180)}
 	curve$y<-curve$y-curve$y[51]	# set apex =0,0
-	if(apex$coordinates$x[2]<0){
-		x.new<-(curve$x*cos(adjusted.angle))-(curve$y*sin(adjusted.angle))	# calculate transformation
-		y.new<-(curve$x*sin(adjusted.angle))+(curve$y*cos(adjusted.angle))
-	}else{
-		x.new<-(curve$x*cos(adjusted.angle))+(curve$y*sin(adjusted.angle))	# calculate transformation
-		y.new<-(curve$x*sin(adjusted.angle))-(curve$y*cos(adjusted.angle))
+	if(sqrt(apex$coordinates$x[2]^2)<10^-10){	# apex x value close to zero
+		if(apex$coordinates$y[2]>0){curve$y<-(-curve$y)}
+		curve.new<-curve
+		# no adjustment required for y<0
+	}else{	# i.e. not directly above or below origin
+		if(apex$coordinates$x[2]<0){
+			x.new<-(curve$x*cos(adjusted.angle))-(curve$y*sin(adjusted.angle))	# calculate transformation
+			y.new<-(curve$x*sin(adjusted.angle))+(curve$y*cos(adjusted.angle))
+		}else{
+			x.new<-(curve$x*cos(adjusted.angle))+(curve$y*sin(adjusted.angle))	# calculate transformation
+			y.new<-(curve$x*sin(adjusted.angle))-(curve$y*cos(adjusted.angle))
+		}
+		curve.new<-data.frame(x=x.new, y=y.new)		# put in new dataframe
 	}
-	curve.new<-data.frame(x=x.new, y=y.new)		# put in new dataframe
 	curve.new$x<-curve.new$x+apex$coordinates$x[2]	# position to new x,y
 	curve.new$y<-curve.new$y+apex$coordinates$y[2]	
 	return(curve.new)
