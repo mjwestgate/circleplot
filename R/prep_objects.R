@@ -170,7 +170,16 @@ set.plot.attributes<-function(
 				seq(0, max(distance.matrix, na.rm=TRUE), length.out=4)[2:4])
 			line.cols<-brewer.pal(6, "RdBu")[6:1]
 		}else{	# sequential colour palette
-			cut.vals<-seq(min(distance.matrix, na.rm=TRUE), max(distance.matrix, na.rm=TRUE), length.out=7)
+			if(any(distance.matrix=="Inf", na.rm=TRUE)){
+				cut.vals<-as.numeric(c(
+				seq(
+					min(distance.matrix, na.rm=TRUE),
+					max(distance.matrix[-which(distance.matrix=="Inf")], na.rm=TRUE), 
+					length.out=6),
+				"Inf"))
+			}else{
+				cut.vals<-seq(min(distance.matrix, na.rm=TRUE), 
+				max(distance.matrix, na.rm=TRUE), length.out=7)}
 			line.cols<-brewer.pal(6, "Purples")}
 	}	# end colour selection	
 
