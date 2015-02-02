@@ -1,5 +1,5 @@
-\name{make.circle}
-\alias{make_circle}
+\name{make_circle}
+\alias{make.circle}
 \title{Generate coordinates of points on the circumference of a circle}
 \usage{
 make.circle(n, alpha, k)

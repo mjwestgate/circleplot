@@ -83,6 +83,11 @@ append.missed.columns<-function(
 	add.cols<-which(keep.cols==FALSE)
 	if(length(add.cols)>0){
 		input<-as.data.frame(cbind(input, default[, add.cols]), stringsAsFactors=FALSE)}
+	# ensure 'labels' column is placed first
+	cols<-c(1:dim(input)[2])
+	label.col<-which(colnames(input)=="labels")
+	input<-input[, c(label.col, cols[-label.col])]
+	# export
 	return(input)
 	}
 
@@ -136,7 +141,15 @@ set.plot.attributes<-function(
 	}else{if(class(plot.defaults$points)=="data.frame"){
 		plot.defaults$points<-append.missed.columns(plot.defaults$points, point.defaults)}
 	}
-
+	# ensure that any factors are converted to characters
+	# note this assumes that only character strings (and not numeric values) will be interpreted as factors
+	factor.test<-rep(FALSE, length(plot.defaults$points))
+	for(i in 1:length(plot.defaults$points)){if(is.factor(plot.defaults$points[, i])){factor.test[i]<-TRUE}}
+	if(any(factor.test)){
+		cols<-which(factor.test==TRUE)
+		plot.defaults$points[, cols]<-apply(plot.defaults$points[, cols], 2, function(x){as.character(x)})
+		}
+		
 	# 3. point labels
 	edge.coords<-make.circle(n=attr(distance.matrix, "Size"), alpha=plot.defaults$plot.rotation, k=1.05)
 	point.labels<-data.frame(
@@ -157,6 +170,13 @@ set.plot.attributes<-function(
 		if(plot.defaults$point.labels){plot.defaults$point.labels<-point.labels}}
 	if(is.null(plot.defaults$point.labels)){
 		plot.defaults$point.labels<-point.labels}
+	# ensure that any factors are converted to characters
+	factor.test<-rep(FALSE, length(plot.defaults$point.labels))
+	for(i in 1:length(plot.defaults$point.labels)){if(is.factor(plot.defaults$point.labels[, i])){factor.test[i]<-TRUE}}
+	if(any(factor.test)){
+		cols<-which(factor.test==TRUE)
+		plot.defaults$point.labels[, cols]<-apply(plot.defaults$point.labels[, cols], 2, function(x){as.character(x)})
+		}
 
 	# remaining stuff:
 	# set defaults for line cuts, colours etc - set all to grey by default
