@@ -38,7 +38,7 @@ circleplot<-function(
 		xlim=x.lim,
 		type="n", ann=FALSE, axes=FALSE, asp=1)	# plot
 	draw.curves(dataset, result, plot.control) 	# add lines
-	do.call(points, as.list(result$points[, -1]))
+	do.call("points", as.list(result$points[, -1]))
 	
 	# label points
 	if(label.suppress.test==FALSE){
