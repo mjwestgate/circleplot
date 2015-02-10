@@ -271,33 +271,32 @@ set.plot.attributes<-function(
 
 	# FUNCTIONS ON INPUT: SET POINT AND LINE ATTRIBUTES
 	# note: formerly located in prep.binary & prep.numeric
+	# begin with point values
 	point.names<-attr(input$dist, "Labels")
 	if(any(is.na(as.numeric(input$dist))))cluster<-FALSE
-
 	# make points for plotting
 	circle.points<-as.data.frame(
 		make.circle(attr(input$dist, "Size"), alpha=plot.defaults$plot.rotation)[, 2:3])
-
 	# reorder (or not)
 	if(cluster){
 		if(input$binary){dist.data<-input$dist}else{dist.data<-as.dist(1-(sqrt(input$dist^2)))}
 		cluster.result<-hclust(dist.data)
 		circle.points$labels<-point.names[cluster.result$order]
 	}else{circle.points$labels<-point.names}
-
 	# add supp. info
 	circle.points$labels<-as.character(circle.points$labels)
+	circle.points<-circle.points[order(circle.points$labels), ]
+
 	circle.points<-merge(circle.points, plot.defaults$points, by="labels")
 	rownames(circle.points)<-circle.points$labels
 
-	# now data.frame where each row shows a line
+	# then line values
 	line.list<-as.data.frame(cbind(
 		t(combn(point.names, 2)), 
 		as.numeric(input$dist)), stringsAsFactors=FALSE)
 		colnames(line.list)<-c("sp1", "sp2", "value")
 		for(i in 1:2){line.list[, i]<-as.character(line.list[, i])}
 		line.list$value<-as.numeric(as.character(line.list$value))
-
 	if(input$binary){
 		# remove 'absent' connections
 		line.list<-line.list[-which(line.list$value==0), ]
@@ -305,14 +304,10 @@ set.plot.attributes<-function(
 		# order line list by effect size
 		effect.size<-line.list$value^2
 		line.list<-line.list[order(effect.size), ]}
-
 	# place NA values first (so they are underneath drawn values)
 	line.list<-line.list[c(
 		which(is.na(line.list$value)==TRUE), 
 		which(is.na(line.list$value)==FALSE)), ]
-
-	# add attributes to line locations
-	# line attr? - merge should occur by location (ie. as.vector(dist)), not using merge()
 
 
 	# ALLOW USER SPECIFICATION OF X, Y LIMITS
