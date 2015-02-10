@@ -282,6 +282,7 @@ set.plot.attributes<-function(
 		if(input$binary){dist.data<-input$dist}else{dist.data<-as.dist(1-(sqrt(input$dist^2)))}
 		cluster.result<-hclust(dist.data)
 		circle.points$labels<-point.names[cluster.result$order]
+		plot.defaults$point.labels$labels<-point.names[cluster.result$order]
 	}else{circle.points$labels<-point.names}
 	# add supp. info
 	circle.points$labels<-as.character(circle.points$labels)
