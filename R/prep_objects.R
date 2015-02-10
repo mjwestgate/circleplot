@@ -93,16 +93,26 @@ append.missed.columns<-function(
 
 
 
+
 # function to set plot defaults, and overwrite if new data is provided
 set.plot.attributes<-function(
 	input,	# result from check.inputs
-	plot.control
+	plot.control,
+	cluster
 	)
 	{
-	## GENERATE AND FILL AN EMPTY LIST ##
-	control.names<-c("plot.rotation", 
-		"points", "point.labels", 
-		"line.gradient", "line.breaks", "line.cols", "line.widths", "line.expansion", "line.curvature", 
+	# FUNCTIONS ON PLOT CONTROL
+	## GENERATE AND FILL AN EMPTY LIST FOR PLOT.CONTROL ##
+	control.names<-c("plot.rotation", "par", "plot",
+		"points", 
+		"point.labels",  # does text(offset=...) work here? would avoid writing code that calls make.circle()
+		"line.breaks", "line.cols", "line.widths", # can these be relaced by a simple command, as in point.attr?
+			# run test to see whether 'lines' is specified as a data.frame
+			# if TRUE, then run line.attr() with appropriate defaults
+			# if FALSE & line.cols etc. are specified, pass to line.attr()
+		# i.e. you need your code to be consistent with earlier versions.
+		# BUT with the aim that except for some circleplot-specific stuff (below), most values are simply passed to do.call
+		"line.gradient", "line.expansion", "line.curvature", 
 		"na.control")
 	plot.defaults<-vector("list", length=length(control.names))
 	names(plot.defaults)<-control.names
@@ -121,11 +131,16 @@ set.plot.attributes<-function(
 			plot.defaults[[i]]<-plot.control[[entry.thisrun]]
 			}}}
 
+
 	## FILL IN MISSING DATA WITH DEFAULTS ## 
 	# 1. plot.rotation - has to be first for point.labels
 	if(is.null(plot.defaults$plot.rotation)){plot.defaults$plot.rotation<-22.91}
 
-	# 2. points
+	# 2. par
+	par.default<-list(mar=rep(0.5, 4), cex=1)
+	if(is.null(plot.defaults$par)){plot.defaults$par<-par.default}
+
+	# 3. points
 	distance.matrix<-input$dist
 	n.points<-attr(distance.matrix, "Size")
 	point.defaults<-data.frame(
@@ -150,8 +165,11 @@ set.plot.attributes<-function(
 		plot.defaults$points[, cols]<-apply(plot.defaults$points[, cols], 2, function(x){as.character(x)})
 		}
 		
-	# 3. point labels
-	edge.coords<-make.circle(n=attr(distance.matrix, "Size"), alpha=plot.defaults$plot.rotation, k=1.05)
+	# 4. point labels
+	if(is.null(plot.defaults$point.labels$offset)){label.distance<-1.1
+	}else{label.distance<-mean(plot.defaults$point.labels$offset, na.rm=TRUE)+1}
+
+	edge.coords<-make.circle(n=attr(distance.matrix, "Size"), alpha=plot.defaults$plot.rotation, k= label.distance)
 	point.labels<-data.frame(
 		labels=attr(distance.matrix, "Labels"),
 		x=edge.coords$x,
@@ -212,6 +230,7 @@ set.plot.attributes<-function(
 	if(is.null(plot.defaults$line.curvature)){plot.defaults$line.curvature <-c(add=0.25, multiply=0.35)}
 	if(is.null(plot.defaults$na.control)){plot.defaults$na.control<-list(lwd=1, lty=2, col="grey")}
 
+
 	## ERROR AVOIDANCE ##
 	# make up to two colours if asymmetry.test==TRUE, and two points have not yet been provided
 	default.directional.cols<-c("grey80", "grey10")
@@ -249,101 +268,85 @@ set.plot.attributes<-function(
 	# ensure that labels are characters, not vectors
 	plot.defaults$points$labels<-as.character(plot.defaults$points$labels)
 
-	return(plot.defaults) # return result
-	}
-	
 
-
-# get binary data into an appropriate format for plotting
-# This has been replaced by a direct call to inner.circle() for now
-prep.binary<-function(
-	dataset,
-	plot.control,
-	cluster
-	)
-	{
-	point.names<-attr(dataset$dist, "Labels")
-	if(any(is.na(as.numeric(dataset$dist))))cluster<-FALSE
+	# FUNCTIONS ON INPUT: SET POINT AND LINE ATTRIBUTES
+	# note: formerly located in prep.binary & prep.numeric
+	point.names<-attr(input$dist, "Labels")
+	if(any(is.na(as.numeric(input$dist))))cluster<-FALSE
 
 	# make points for plotting
 	circle.points<-as.data.frame(
-		make.circle(attr(dataset$dist, "Size"), alpha=plot.control$plot.rotation)[, 2:3])
+		make.circle(attr(input$dist, "Size"), alpha=plot.defaults$plot.rotation)[, 2:3])
 
 	# reorder (or not)
 	if(cluster){
-		cluster.result<-hclust(dataset$dist)
+		if(input$binary){dist.data<-input$dist}else{dist.data<-as.dist(1-(sqrt(input$dist^2)))}
+		cluster.result<-hclust(dist.data)
 		circle.points$labels<-point.names[cluster.result$order]
 	}else{circle.points$labels<-point.names}
+
+	# add supp. info
 	circle.points$labels<-as.character(circle.points$labels)
-	circle.points<-circle.points[order(circle.points$labels), ]
+	circle.points<-merge(circle.points, plot.defaults$points, by="labels")
+	rownames(circle.points)<-circle.points$labels
 
 	# now data.frame where each row shows a line
 	line.list<-as.data.frame(cbind(
 		t(combn(point.names, 2)), 
-		as.numeric(dataset$dist)))
+		as.numeric(input$dist)), stringsAsFactors=FALSE)
 		colnames(line.list)<-c("sp1", "sp2", "value")
 		for(i in 1:2){line.list[, i]<-as.character(line.list[, i])}
 		line.list$value<-as.numeric(as.character(line.list$value))
 
-	# remove 'absent' connections
-	line.list<-line.list[-which(line.list$value==0), ]
+	if(input$binary){
+		# remove 'absent' connections
+		line.list<-line.list[-which(line.list$value==0), ]
+	}else{
+		# order line list by effect size
+		effect.size<-line.list$value^2
+		line.list<-line.list[order(effect.size), ]}
 
 	# place NA values first (so they are underneath drawn values)
-	line.list<-line.list[c(which(is.na(line.list$value)==TRUE), 
+	line.list<-line.list[c(
+		which(is.na(line.list$value)==TRUE), 
 		which(is.na(line.list$value)==FALSE)), ]
 
-	# add attributes to circle locations
-	circle.points<-merge(circle.points, plot.control$points, by="labels")
-		# circle.points<-circle.points[, c(2, 3, 1, 4:dim(circle.points)[2])]
-		rownames(circle.points)<-circle.points$labels
+	# add attributes to line locations
+	# line attr? - merge should occur by location (ie. as.vector(dist)), not using merge()
 
-	# export
-	return(list(points=circle.points, lines=line.list))
+
+	# ALLOW USER SPECIFICATION OF X, Y LIMITS
+	# determine margins
+	x.lim<-c(min(circle.points$x), max(circle.points$x))
+	# extra x margins added
+	label.suppress.test<-is.logical(plot.defaults$point.labels) & length(plot.defaults$point.labels)==1
+	# note this works beacuse set.plot.attributes allows FALSE as the only logical operator to point.labels
+	if(label.suppress.test==FALSE){
+		max.label<-max(nchar(circle.points$labels))
+		x.expansion<-max.label*0.03
+		x.lim<-colSums(rbind(x.lim, c(-x.expansion, x.expansion)))
+	}else{x.lim<-c(-1, 1)}
+
+	# set plot attributes
+	plot.list<-list(x=circle.points$x, y=circle.points$y, 
+		xlim=x.lim, ylim=x.lim, type="n", ann=FALSE, axes=FALSE, asp=1)
+	if(is.null(plot.defaults$plot)){
+		plot.defaults$plot<-plot.list
+	}else{
+		user.data<-plot.defaults$plot
+		attr.list<-names(user.data)
+		available.attr<-names(plot.list)
+		keep.cols<-sapply(available.attr, FUN=function(x){any(attr.list==x)})
+		add.cols<-which(keep.cols==FALSE)
+		if(length(add.cols)>0){plot.defaults$plot<-append(user.data, plot.list[as.numeric(add.cols)])
+		}else{plot.defaults$plot<-user.data}
 	}
 
-
-
-
-# function to prepare data for analysis if input matrix is numeric
-prep.numeric<-function(
-	dataset, 
-	plot.control,
-	cluster
-	)
-	{
-	point.names<-attr(dataset$dist, "Labels")
-	if(any(is.na(as.numeric(dataset$dist))))cluster<-FALSE
-
-	# point info prep 
-	circle.points<-as.data.frame(
-		make.circle(attr(dataset$dist, "Size"), alpha=plot.control$plot.rotation)[, 2:3])
-
-	# work out point order using clustering (or not)
-	if(cluster){
-		connection.distance<-as.dist(1-(sqrt(dataset$dist^2)))
-		result<-hclust(connection.distance)
-		circle.points$labels<-point.names[result$order]
-	}else{
-		circle.points$labels<-point.names}
-
-	# add point attributes
-	circle.points<-merge(circle.points, plot.control$points, by="labels")
-		# circle.points<-circle.points[, c(2, 3, 1, 4:dim(circle.points)[2])]
-		rownames(circle.points)<-circle.points$labels
-
-	# line info prep
-	line.list <- data.frame(t(combn(point.names, 2)),
-			as.vector(dataset$dist),
-                        stringsAsFactors = FALSE)
-	colnames(line.list)<-c("sp1", "sp2", "value")
-
-	# order line list by effect size
-	effect.size<-line.list$value^2
-	line.list<-line.list[order(effect.size), ]
-
-	# place NA values first (so they are underneath drawn values)
-	line.list<-line.list[c(which(is.na(line.list$value)==TRUE), 
-		which(is.na(line.list$value)==FALSE)), ]
-
-	return(list(points=circle.points, lines=line.list))
+	# return all outputs
+	result<-list(
+		binary= input$binary,
+		asymmetric=input$asymmetric,
+		points=circle.points, 
+		lines=line.list, 
+		plot.control=plot.defaults)
 	}
