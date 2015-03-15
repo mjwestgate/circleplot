@@ -166,11 +166,10 @@ set.plot.attributes<-function(
 		}
 		
 	# 4. point labels
-	if(plot.defaults$point.labels!=FALSE){
-	if(is.null(plot.defaults$point.labels$offset)){label.distance<-1.1
-	}else{if(missing(plot.defaults$point.labels$offset)){
-		label.distance<-mean(plot.defaults$point.labels$offset, na.rm=TRUE)+1}}
+	if(any(colnames(plot.defaults$point.labels)=="offset")==TRUE){
+		label.distance<-mean(plot.defaults$point.labels$offset, na.rm=TRUE)+1
 	}else{label.distance<-1}
+#	if(is.null(plot.defaults$point.labels$offset)){label.distance<-1.1
 
 	edge.coords<-make.circle(n=attr(distance.matrix, "Size"), alpha=plot.defaults$plot.rotation, k= label.distance)
 	point.labels<-data.frame(
@@ -273,6 +272,8 @@ set.plot.attributes<-function(
 
 
 	# FUNCTIONS ON INPUT: SET POINT AND LINE ATTRIBUTES
+	# this behaviour partially depends on whether labels should be added
+	label.suppress.test<-is.logical(plot.defaults$point.labels) & length(plot.defaults$point.labels)==1
 	# note: formerly located in prep.binary & prep.numeric
 	# begin with point values
 	point.names<-attr(input$dist, "Labels")
@@ -285,7 +286,7 @@ set.plot.attributes<-function(
 		if(input$binary){dist.data<-input$dist}else{dist.data<-as.dist(1-(sqrt(input$dist^2)))}
 		cluster.result<-hclust(dist.data)
 		circle.points$labels<-point.names[cluster.result$order]
-		plot.defaults$point.labels$labels<-point.names[cluster.result$order]
+		if(label.suppress.test==FALSE){plot.defaults$point.labels$labels<-point.names[cluster.result$order]}
 	}else{circle.points$labels<-point.names}
 	# add supp. info
 	circle.points$labels<-as.character(circle.points$labels)
@@ -318,7 +319,6 @@ set.plot.attributes<-function(
 	# determine margins
 	x.lim<-c(min(circle.points$x), max(circle.points$x))
 	# extra x margins added
-	label.suppress.test<-is.logical(plot.defaults$point.labels) & length(plot.defaults$point.labels)==1
 	# note this works beacuse set.plot.attributes allows FALSE as the only logical operator to point.labels
 	if(label.suppress.test==FALSE){
 		max.label<-max(nchar(circle.points$labels))
@@ -348,4 +348,5 @@ set.plot.attributes<-function(
 		points=circle.points, 
 		lines=line.list, 
 		plot.control=plot.defaults)
+	return(result)
 	}
