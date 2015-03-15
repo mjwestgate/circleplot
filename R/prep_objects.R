@@ -166,8 +166,11 @@ set.plot.attributes<-function(
 		}
 		
 	# 4. point labels
+	if(plot.defaults$point.labels!=FALSE){
 	if(is.null(plot.defaults$point.labels$offset)){label.distance<-1.1
-	}else{label.distance<-mean(plot.defaults$point.labels$offset, na.rm=TRUE)+1}
+	}else{if(missing(plot.defaults$point.labels$offset)){
+		label.distance<-mean(plot.defaults$point.labels$offset, na.rm=TRUE)+1}}
+	}else{label.distance<-1}
 
 	edge.coords<-make.circle(n=attr(distance.matrix, "Size"), alpha=plot.defaults$plot.rotation, k= label.distance)
 	point.labels<-data.frame(
