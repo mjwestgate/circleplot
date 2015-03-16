@@ -24,7 +24,7 @@ Draws a circular plot of a distance matrix.
 \note{
 options for plot.control are as follows:
   \describe{
-    \item{plot.rotation}{a single numeric value, used to set the number of degrees that points are rotated. Set to 22.91 by default (0.4 radians).}
+    \item{plot.rotation}{a single numeric value, used to set the number of degrees that points are rotated. Default is to arrange points clockwise from vertical (note this is altered from the original default of 22.91 degrees (0.4 radians)).}
 	\item{plot}{a list of commands to pass to plot()}
 	\item{par}{a list of commands to pass to par()}
     \item{points}{a data.frame giving point attributes, where colnames are the names of arguments to be passed to points(), plus an extra column named 'labels' for matching to the labels of the input distance matrix.  An example can be seen by calling point.attr().}

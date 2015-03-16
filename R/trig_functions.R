@@ -7,7 +7,8 @@ make.circle<-function(
 	k)	# scaling value - larger for bigger circles. defaults to 1
 	{
 	if(missing(k))k<-1
-	if(missing(alpha))alpha<-22.91	# as original default was 0.4 radians
+	if(missing(alpha))alpha<-(-90-(180/n))
+	# if(missing(alpha))alpha<-22.91	# as original default was 0.4 radians
 
 	# convert to radians
 	alpha<-alpha*(pi/180)
@@ -21,6 +22,10 @@ make.circle<-function(
 		values$x[i]<-k*cos(values$theta[i])
 		values$y[i]<-k*sin(values$theta[i])
 		}
+
+	# reorder such that circle is drawn clockwise from the top
+	values<-values[c(nrow(values):1), ]
+	rownames(values)<-c(1:nrow(values))
 	return(values)
 	}
 
