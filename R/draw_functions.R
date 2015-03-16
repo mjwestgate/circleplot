@@ -1,8 +1,5 @@
 # add curved connecting lines to circleplot()
 draw.curves<-function(
-	#dataset,
-	#plot.locations,
-	#plot.control
 	input
 	)
 	{
@@ -30,9 +27,7 @@ draw.curves<-function(
 	# add line to remove NA values if plot.control$na.control is not a list
 	# this reduces the time taken to draw plots with many NA values
 	if(class(input$plot.control$na.control)!="list"){
-		input$plot.locations$lines<-input$plot.locations$lines[-which(
-			is.na(input$plot.locations$lines$value)==TRUE), ]
-		}
+		input$lines<-input$lines[-which(is.na(input$lines$value)==TRUE), ]}
 
 	# loop to draw lines of requisite location and colour
 	for(i in 1:dim(input$lines)[1])	
