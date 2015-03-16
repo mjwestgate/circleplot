@@ -7,7 +7,8 @@ make.circle<-function(
 	k)	# scaling value - larger for bigger circles. defaults to 1
 	{
 	if(missing(k))k<-1
-	if(missing(alpha))alpha<-(-90-(180/n))
+	base.alpha<-(-90-(180/n))
+	if(missing(alpha)){alpha<-base.alpha}else{alpha<-alpha+base.alpha}
 	# if(missing(alpha))alpha<-22.91	# as original default was 0.4 radians
 
 	# convert to radians

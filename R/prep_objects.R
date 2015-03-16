@@ -134,7 +134,7 @@ set.plot.attributes<-function(
 
 	## FILL IN MISSING DATA WITH DEFAULTS ## 
 	# 1. plot.rotation - has to be first for point.labels
-	if(is.null(plot.defaults$plot.rotation)){plot.defaults$plot.rotation<-22.91}
+	if(is.null(plot.defaults$plot.rotation)){plot.defaults$plot.rotation<-0}
 
 	# 2. par
 	par.default<-list(mar=rep(0.5, 4), cex=1)
@@ -166,11 +166,11 @@ set.plot.attributes<-function(
 		}
 		
 	# 4. point labels
+	# set behaviour if no information has been given
 	if(any(colnames(plot.defaults$point.labels)=="offset")==TRUE){
 		label.distance<-mean(plot.defaults$point.labels$offset, na.rm=TRUE)+1
 	}else{label.distance<-1}
-#	if(is.null(plot.defaults$point.labels$offset)){label.distance<-1.1
-
+	# create an object to allow proper positioning of labels
 	edge.coords<-make.circle(n=attr(distance.matrix, "Size"), alpha=plot.defaults$plot.rotation, k= label.distance)
 	point.labels<-data.frame(
 		labels=attr(distance.matrix, "Labels"),
@@ -291,7 +291,6 @@ set.plot.attributes<-function(
 	# add supp. info
 	circle.points$labels<-as.character(circle.points$labels)
 	circle.points<-circle.points[order(circle.points$labels), ]
-
 	circle.points<-merge(circle.points, plot.defaults$points, by="labels")
 	rownames(circle.points)<-circle.points$labels
 
