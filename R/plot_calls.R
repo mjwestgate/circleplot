@@ -52,42 +52,15 @@ point.attr<-function(distance.matrix)
 
 
 # add keys to a circleplot
-add.key<-function(circleplot.result, 
-	xlim,
-	cex
-	)
+add.key<-function (circleplot.result, labels, exclude.lines=999, 
+	xlim=c(0.4, 1), ylim=c(-0.1, 1.1)) 
 	{
-	# set inputs
-	breaks<-circleplot.result$plot.control$line.breaks
-	colours<-circleplot.result$plot.control$line.cols
-	widths<-circleplot.result$plot.control$line.widths
-	if(missing(xlim))xlim<-c(0.4, 1)
-	if(missing(cex))cex<-1
-
-	# work out what to do with missing values
-	if(any(is.na(circleplot.result$lines))){
-		if(is.list(circleplot.result$plot.control$na.control)){
-			plot.nas<-TRUE; nlines<-length(colours)+1
-			}else{plot.nas<-FALSE; nlines<-length(colours)}
-	}else{plot.nas<-FALSE; nlines<-length(colours)}
-
-	# set y values
-	y.vals<-seq(1, 0, length.out=nlines)
-	breaks<-format(breaks, digits=2)	# should avoid rounding errors
-
+	# prep
+	plot.list<-get.key.dframe(circleplot.result, exclude.lines)
+	if(missing(labels)==FALSE){plot.list$text$labels<-labels}
 	# draw
-	plot(c(1)~c(1), ann=FALSE, axes=FALSE, type="n", xlim= xlim, ylim=c(-0.1, 1.1))
-	for(i in 1: length(colours)){
-		lines(x=c(0.5, 1), y=rep(y.vals[i], 2), col=colours[i], lwd= widths[i])
-		text(x=0.5, y=y.vals[i], labels=paste(breaks[i], "-", breaks[i+1], sep=" "), pos=2, cex=cex)}
-	
-	# add NA line if applicable
-	if(plot.nas){
-		plot.list<-append(list(x=c(0.5, 1), y=rep(0, 2)), circleplot.result$plot.control$na.control)
-		do.call("lines", plot.list)
-		text(x=0.5, y=0, labels="NA", pos=2, cex=cex)
-		}
-
-	}	# end function
-
-	# mtext("Key", side=3, adj=0, cex=cex, font=2) # again, can be drawn outside
+    plot(c(1) ~ c(1), ann = FALSE, axes = FALSE, type = "n", xlim = xlim, ylim = ylim, ...)
+	line.fun<-function(x0, x1, y0, y1, ...){lines(x=c(x0, x1), y=c(y0, y1), ...)}
+	invisible(lapply(split(plot.list$lines, c(1:nrow(plot.list$lines))), FUN=function(x){do.call("line.fun", x)}))
+	do.call("text", plot.list$text)
+}

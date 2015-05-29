@@ -2,16 +2,19 @@
 \alias{add.key}
 \title{Draw the key to line colours for a given circleplot}
 \usage{
-add.key(circleplot.output)
+add.key(circleplot.output, labels, exclude.lines, cex)
 }
 \arguments{
-  \item{circleplot.output}{the invisibly returned result of command circleplot()}
+  \item{circleplot.output}{Invisibly returned result of command circleplot()}
+  \item{labels}{(optional) replacement labels for line attributes}
+  \item{exclude.lines}{numeric vector giving the lines that should be excluded from the plot (if any), counted from the top down.}
+  \item{cex}{character expansion factor, passed to lines().}
 }
 \value{
 Draws a simple key
 }
 \description{
-This is a simple function, and only returns line colours (and not widths) in the current version. Some messing with the cex and xlim controls is often necessary for optimal display.
+This is a simple function, and only returns line colours (and not widths) in the current version. Some messing with the cex, xlim ylim is often necessary for optimal display.
 }
 \examples{
 # generate some data

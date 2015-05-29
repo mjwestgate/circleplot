@@ -349,3 +349,61 @@ set.plot.attributes<-function(
 		plot.control=plot.defaults)
 	return(result)
 	}
+
+
+# function to add get a data.frame in the correct format to draw a key from a circleplot object
+get.key.dframe<-function(circleplot.result, exclude.lines){
+
+	# get info from source object
+    breaks <- circleplot.result$plot.control$line.breaks
+		breaks <- format(breaks, digits = 2)
+    colours <- circleplot.result$plot.control$line.cols
+    widths <- circleplot.result$plot.control$line.widths
+
+	# sort out col names with and without NA values
+	na.info<-circleplot.result$plot.control$na.control
+	na.present<-is.list(circleplot.result$plot.control$na.control)
+	col.names<-c("col", "lty", "lwd")
+	if(na.present){col.names<-sort(unique(c(col.names, names(na.info))))}
+	nlines<-length(colours)+1
+
+	# make line data.frame
+	line.data<-as.data.frame(matrix(data=NA, nrow=nlines, ncol=length(col.names)))
+		colnames(line.data)<-col.names
+	line.data$col[1:length(colours)]<-colours
+	line.data$lty[1:length(colours)]<-1
+	line.data$lwd[1:length(widths)]<-widths
+
+	# add NA information
+	if(na.present){for(i in 1:length(na.info)){
+		col<-which(colnames(line.data)==names(na.info)[i])
+		line.data[nrow(line.data), col]<-na.info[i]}}
+	
+	# group data into a single data.frame that can be passed to lines by do.call
+	line.frame<-cbind(data.frame(x0=0.5, x1=1, y0=1, y1=1),line.data)
+	text.frame<-data.frame(x=rep(0.5, nlines), y=1, cex=cex, pos=2, stringsAsFactors=FALSE)
+	labels.initial<-c(paste(breaks[c(1:(length(breaks)-1))], "-", breaks[c(2:length(breaks))], sep=" "), "NA")
+	text.frame$labels<-labels.initial
+
+	# exclude lines as requested by user
+	exclude.na<-c(na.present==FALSE | any(exclude.lines==nrow(line.data)))
+	if(exclude.na){
+		line.frame<-line.frame[-nlines, ]
+		text.frame<-text.frame[-nlines, ]
+		}
+	if(any(exclude.lines==nlines)){exclude.lines<-exclude.lines[-which(exclude.lines==nlines)]}
+	exclude.test<-c(length(exclude.lines)>0 & exclude.lines!=999)
+	if(exclude.test){	
+		line.frame<-line.frame[-exclude.lines, ]
+		text.frame<-text.frame[-exclude.lines, ]
+		}
+	nlines<-nrow(line.frame)
+
+	# sort out y values	
+	y.vals <- seq(1, 0, length.out = nlines)
+	line.frame$y0<-y.vals; line.frame$y1<-y.vals
+	text.frame$y<-y.vals
+
+	# return object
+	return(list(lines=line.frame, text=text.frame))
+	}
