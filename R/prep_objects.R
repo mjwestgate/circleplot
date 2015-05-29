@@ -352,7 +352,7 @@ set.plot.attributes<-function(
 
 
 # function to add get a data.frame in the correct format to draw a key from a circleplot object
-get.key.dframe<-function(circleplot.result, exclude.lines){
+get.key.dframe<-function(circleplot.result, exclude.lines, cex){
 
 	# get info from source object
     breaks <- circleplot.result$plot.control$line.breaks

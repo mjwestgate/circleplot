@@ -53,10 +53,10 @@ point.attr<-function(distance.matrix)
 
 # add keys to a circleplot
 add.key<-function (circleplot.result, labels, exclude.lines=999, 
-	xlim=c(0.4, 1), ylim=c(-0.1, 1.1)) 
+	xlim=c(0.4, 1), ylim=c(-0.1, 1.1), cex=1) 
 	{
 	# prep
-	plot.list<-get.key.dframe(circleplot.result, exclude.lines)
+	plot.list<-get.key.dframe(circleplot.result, exclude.lines, cex)
 	if(missing(labels)==FALSE){plot.list$text$labels<-labels}
 	# draw
     plot(c(1) ~ c(1), ann = FALSE, axes = FALSE, type = "n", xlim = xlim, ylim = ylim, ...)
