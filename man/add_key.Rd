@@ -2,13 +2,14 @@
 \alias{add.key}
 \title{Draw the key to line colours for a given circleplot}
 \usage{
-add.key(circleplot.output, labels, exclude.lines, cex)
+add.key(circleplot.output, labels, exclude.lines, cex, ...)
 }
 \arguments{
   \item{circleplot.output}{Invisibly returned result of command circleplot()}
   \item{labels}{(optional) replacement labels for line attributes}
-  \item{exclude.lines}{numeric vector giving the lines that should be excluded from the plot (if any), counted from the top down.}
-  \item{cex}{character expansion factor, passed to lines().}
+  \item{exclude.lines}{numeric vector giving the lines that should be excluded from the plot (if any), counted from the top down}
+  \item{cex}{character expansion factor, passed to lines()}
+  \item{...}{further information passed to plot()}
 }
 \value{
 Draws a simple key
