@@ -392,7 +392,7 @@ get.key.dframe<-function(circleplot.result, exclude.lines, cex){
 		text.frame<-text.frame[-nlines, ]
 		}
 	if(any(exclude.lines==nlines)){exclude.lines<-exclude.lines[-which(exclude.lines==nlines)]}
-	exclude.test<-c(length(exclude.lines)>0 & exclude.lines!=999)
+	exclude.test<-c(length(exclude.lines)>0 & any(exclude.lines==999)==FALSE)
 	if(exclude.test){	
 		line.frame<-line.frame[-exclude.lines, ]
 		text.frame<-text.frame[-exclude.lines, ]
