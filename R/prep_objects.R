@@ -352,7 +352,7 @@ set.plot.attributes<-function(
 
 
 # function to add get a data.frame in the correct format to draw a key from a circleplot object
-get.key.dframe<-function(circleplot.result, exclude.lines, cex){
+get.key.dframe<-function(circleplot.result, exclude.lines, reverse, cex){
 
 	# get info from source object
     breaks <- circleplot.result$plot.control$line.breaks
@@ -399,8 +399,9 @@ get.key.dframe<-function(circleplot.result, exclude.lines, cex){
 		}
 	nlines<-nrow(line.frame)
 
-	# sort out y values	
-	y.vals <- seq(1, 0, length.out = nlines)
+	# sort out y values (in reverse order if requested)
+	if(reverse){y.vals <- seq(0, 1, length.out = nlines)
+	}else{y.vals <- seq(1, 0, length.out = nlines)}
 	line.frame$y0<-y.vals; line.frame$y1<-y.vals
 	text.frame$y<-y.vals
 

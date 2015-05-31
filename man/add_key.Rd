@@ -2,12 +2,13 @@
 \alias{add.key}
 \title{Draw the key to line colours for a given circleplot}
 \usage{
-add.key(circleplot.output, labels, exclude.lines, cex, ...)
+add.key(circleplot.output, labels, exclude.lines, reverse, cex, ...)
 }
 \arguments{
   \item{circleplot.output}{Invisibly returned result of command circleplot()}
   \item{labels}{(optional) replacement labels for line attributes}
   \item{exclude.lines}{numeric vector giving the lines that should be excluded from the plot (if any), counted from the top down}
+  \item{reverse}{if TRUE, reverses the order of lines in the key. Defaults to FALSE. Note that this command applies after label placement, so both 'labels' and 'exclude.lines' commands (above) must refer to intial order.}	
   \item{cex}{character expansion factor, passed to lines()}
   \item{...}{further information passed to plot()}
 }
@@ -15,7 +16,7 @@ add.key(circleplot.output, labels, exclude.lines, cex, ...)
 Draws a simple key
 }
 \description{
-This is a simple function, and only returns line colours (and not widths) in the current version. Some messing with the cex, xlim ylim is often necessary for optimal display.
+This is a simple function, and only returns line colours (and not widths) in the current version. Some care with cex, xlim & ylim is often necessary for optimal display in the current version.
 }
 \examples{
 # generate some data
