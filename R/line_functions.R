@@ -7,7 +7,7 @@ draw.curves<-function(x){
 		segment.list<-append(
 			list(x0= x$x[1:100], x1= x$x[2:101], y0= x$y[1:100], y1= x$y[2:101]),
 			x[-c(1:2)])
-		do.call("segments", segments.list)
+		do.call("segments", segment.list)
 	}else{do.call("lines", x)}
 	}
 
