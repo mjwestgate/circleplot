@@ -206,20 +206,20 @@ set.plot.attributes<-function(
 		overlap.zero<-min(distance.matrix, na.rm=TRUE)<0 & max(distance.matrix, na.rm=TRUE)>0
 		if(overlap.zero){	# diverging colour palette
 			cut.vals<-c(
-				seq(min(distance.matrix, na.rm=TRUE), 0, length.out=4)[1:3], 0, 
-				seq(0, max(distance.matrix, na.rm=TRUE), length.out=4)[2:4])
+				seq(min(distance.matrix, na.rm=TRUE)-0.001, 0, length.out=4)[1:3], 0, 
+				seq(0, max(distance.matrix, na.rm=TRUE)+0.001, length.out=4)[2:4])
 			line.cols<-brewer.pal(6, "RdBu")[6:1]
 		}else{	# sequential colour palette
 			if(any(distance.matrix=="Inf", na.rm=TRUE)){
 				cut.vals<-as.numeric(c(
 				seq(
-					min(distance.matrix, na.rm=TRUE),
-					max(distance.matrix[-which(distance.matrix=="Inf")], na.rm=TRUE), 
+					min(distance.matrix, na.rm=TRUE)-0.001,
+					max(distance.matrix[-which(distance.matrix=="Inf")]+0.001, na.rm=TRUE), 
 					length.out=6),
 				"Inf"))
 			}else{
-				cut.vals<-seq(min(distance.matrix, na.rm=TRUE), 
-				max(distance.matrix, na.rm=TRUE), length.out=7)}
+				cut.vals<-seq(min(distance.matrix, na.rm=TRUE)-0.001, 
+				max(distance.matrix, na.rm=TRUE)+0.001, length.out=7)}
 			line.cols<-brewer.pal(6, "Purples")}
 	}	# end colour selection	
 
@@ -227,13 +227,27 @@ set.plot.attributes<-function(
 	if(is.null(plot.defaults$line.gradient)){plot.defaults$line.gradient<-FALSE}
 	if(is.null(plot.defaults$line.breaks)){plot.defaults$line.breaks<-cut.vals}
 	if(is.null(plot.defaults$line.cols)){plot.defaults$line.cols<-line.cols}
-	if(is.null(plot.defaults$line.widths)){plot.defaults$line.widths<-rep(1, length(line.cols))}
+	if(is.null(plot.defaults$line.widths)){plot.defaults$line.widths<-rep(1, length(plot.defaults$line.cols))}
 	if(is.null(plot.defaults$line.expansion)){plot.defaults$line.expansion<-0}
 	if(is.null(plot.defaults$line.curvature)){plot.defaults$line.curvature <-c(add=0.25, multiply=0.35)}
 	if(is.null(plot.defaults$na.control)){plot.defaults$na.control<-list(lwd=1, lty=2, col="grey")}
 
 
 	## ERROR AVOIDANCE ##
+	# ensure line.breaks incapsulate all values of input
+	range.input<-range(input$dist, na.rm=TRUE)
+	range.breaks<-range(plot.defaults$line.breaks)
+	if(range.breaks[1]>range.input[1] | range.breaks[2]<range.input[2]){
+		stop(paste(
+			'Specified line.breaks do not encapsulate the range of values of the input matrix (min=',
+			round(range.input[1], 2), ', max=', round(range.input[2], 2), 
+			'); please specify new breaks', sep=""))
+		}
+
+	# ensure correct number of colours and widths added
+	if(length(plot.defaults$line.cols)!=(length(plot.defaults$line.breaks)-1)){
+		stop("Specified number of line.cols does not match number of line.breaks; please adjust inputs to plot.control")}
+
 	# make up to two colours if asymmetry.test==TRUE, and two points have not yet been provided
 	default.directional.cols<-c("grey80", "grey10")
 	if(input$asymmetric){
@@ -245,7 +259,7 @@ set.plot.attributes<-function(
 	# only change if defaults have been overwritten with poor inputs
 	if(length(plot.defaults$line.widths)!=length(plot.defaults$line.cols)){	
 		if(length(plot.defaults$line.widths)==1){
-			plot.defaults$line.widths<-rep(plot.defaults$line.widths, length(line.cols))
+			plot.defaults$line.widths<-rep(plot.defaults$line.widths, length(plot.defaults$line.cols))
 		}else{if(length(plot.defaults$line.widths)>1){	# i.e. if a min and max is given, choose only the max value
 			plot.defaults$line.widths<-rep(max(plot.defaults$line.widths, na.rm=TRUE), length(line.cols))
 		}}}
@@ -362,7 +376,7 @@ get.key.dframe<-function(circleplot.result, exclude.lines, reverse, cex){
 
 	# sort out col names with and without NA values
 	na.info<-circleplot.result$plot.control$na.control
-	na.present<-is.list(circleplot.result$plot.control$na.control)
+	na.present<-is.list(circleplot.result$plot.control$na.control) & any(is.na(circleplot.result$lines$value))
 	col.names<-c("col", "lty", "lwd")
 	if(na.present){col.names<-sort(unique(c(col.names, names(na.info))))}
 	nlines<-length(colours)+1
@@ -400,8 +414,11 @@ get.key.dframe<-function(circleplot.result, exclude.lines, reverse, cex){
 	nlines<-nrow(line.frame)
 
 	# sort out y values (in reverse order if requested)
-	if(reverse){y.vals <- seq(0, 1, length.out = nlines)
-	}else{y.vals <- seq(1, 0, length.out = nlines)}
+	if(reverse){
+		if(exclude.na){line.order<-c(nlines:1)}else{line.order<-c((nlines-1):1, nlines)} # NA values always placed last
+		line.frame<-line.frame[line.order, ]
+		text.frame<-text.frame[line.order, ]}
+	y.vals <- seq(1, 0, length.out = nlines)
 	line.frame$y0<-y.vals; line.frame$y1<-y.vals
 	text.frame$y<-y.vals
 

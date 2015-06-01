@@ -53,7 +53,7 @@ point.attr<-function(distance.matrix)
 
 
 # add keys to a circleplot
-add.key<-function (circleplot.result, labels, exclude.lines=999,  reverse=FALSE,
+add.key<-function (circleplot.result, labels, exclude.lines=999,  reverse=TRUE,
 	xlim=c(0.4, 1), ylim=c(-0.1, 1.1), cex=1, ...) 
 	{
 	# prep

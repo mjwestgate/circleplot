@@ -26,7 +26,7 @@ get.curves<-function(
 
 	# set line colours & widths. 
 	# Note that this works even for binary matrices, but is later ignored if line.gradient==FALSE
-	line.cuts<-cut(input$lines$value, input$plot.control$line.breaks, include.lowest=TRUE, labels=FALSE)
+	line.cuts<-cut(input$lines$value, input$plot.control$line.breaks, include.lowest=TRUE, right=TRUE, labels=FALSE)
 	input$lines$colour<-input$plot.control$line.cols[line.cuts]
 
 	# new code for setting line widths
@@ -36,7 +36,8 @@ get.curves<-function(
 	# add line to remove NA values if plot.control$na.control is not a list
 	# this reduces the time taken to draw plots with many NA values
 	if(class(input$plot.control$na.control)!="list"){
-		input$lines<-input$lines[-which(is.na(input$lines$value)==TRUE), ]}
+		if(any(is.na(input$lines$value))){
+			input$lines<-input$lines[-which(is.na(input$lines$value)==TRUE), ]}}
 
 	# loop to calculate lines of requisite location and colour
 	line.list<-apply(input$lines, 1, FUN=function(x, input, distance){calc.lines(x, input, distance)},
@@ -85,7 +86,7 @@ calc.lines<-function(lines, input, distance)
 	} 
 
 	# set NA behaviour
-	if(is.na(lines[3])){
+	if(is.na(value)){
 		if(is.list(plot.control$na.control)){
 			#na.plot<-list(x=new.curve$x, y=new.curve$y)
 			new.curve<-append(new.curve, plot.control$na.control)
