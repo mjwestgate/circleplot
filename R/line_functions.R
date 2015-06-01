@@ -33,17 +33,11 @@ get.curves<-function(
 	input$lines$lwd.max<-input$plot.control$line.widths[line.cuts]	
 	input$lines$lwd.min<-input$plot.control$line.widths[line.cuts]*input$plot.control$line.expansion
 	
-	# set default line widths (0-1 range) assuming expansion >0
-	x<-seq(-2, 2, length.out=100)
-	line.widths<-dnorm(x, mean=0, sd=0.5)
-	line.widths<-line.widths-min(line.widths); line.widths<-line.widths/max(line.widths)
-
 	# add line to remove NA values if plot.control$na.control is not a list
 	# this reduces the time taken to draw plots with many NA values
 	if(class(input$plot.control$na.control)!="list"){
 		input$lines<-input$lines[-which(is.na(input$lines$value)==TRUE), ]}
 
-	
 	# loop to calculate lines of requisite location and colour
 	line.list<-apply(input$lines, 1, FUN=function(x, input, distance){calc.lines(x, input, distance)},
 		input=input, distance=scale.distance)
@@ -101,9 +95,14 @@ calc.lines<-function(lines, input, distance)
 
 	# set line widths
 	lwd.range<-lwd.max-lwd.min
-	line.widths.thisrun<-(line.widths*lwd.range)+lwd.min
-	if(length(unique(line.widths.thisrun))==1){lwd.final<-line.widths.thisrun[1]
-	}else{lwd.final<-line.widths.thisrun}
+	if(lwd.range>0){
+		# set default line widths (0-1 range) assuming expansion >0
+		x<-seq(-2, 2, length.out=100)
+		line.widths<-dnorm(x, mean=0, sd=0.5)
+		line.widths<-line.widths-min(line.widths)
+		line.widths<-line.widths/max(line.widths)
+		lwd.final<-(line.widths*lwd.range)+lwd.min
+	}else{lwd.final<-lwd.max}
 
 	# set line colours according to categorical or continuous lines 	
 	if(binary){
