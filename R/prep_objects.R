@@ -105,7 +105,7 @@ set.plot.attributes<-function(
 	## GENERATE AND FILL AN EMPTY LIST FOR PLOT.CONTROL ##
 	control.names<-c("plot.rotation", "par", "plot",
 		"points", 
-		"point.labels",  # does text(offset=...) work here? would avoid writing code that calls make.circle()
+		"point.labels", 
 		"line.breaks", "line.cols", "line.widths", # can these be relaced by a simple command, as in point.attr?
 			# run test to see whether 'lines' is specified as a data.frame
 			# if TRUE, then run line.attr() with appropriate defaults
@@ -147,7 +147,7 @@ set.plot.attributes<-function(
 			labels=attr(distance.matrix, "Labels"),
 			pch=19,
 			col=rep(rgb(t(col2rgb("grey30")), maxColorValue=255), n.points),
-			cex=2,
+			cex=1,
 			stringsAsFactors=FALSE)
 	rownames(point.defaults)<-point.defaults$labels
 	# overwrite
@@ -169,7 +169,7 @@ set.plot.attributes<-function(
 	# set behaviour if no information has been given
 	if(any(colnames(plot.defaults$point.labels)=="offset")==TRUE){
 		label.distance<-mean(plot.defaults$point.labels$offset, na.rm=TRUE)+1
-	}else{label.distance<-1}
+	}else{label.distance<-1.05}
 	# create an object to allow proper positioning of labels
 	edge.coords<-make.circle(n=attr(distance.matrix, "Size"), alpha=plot.defaults$plot.rotation, k= label.distance)
 	point.labels<-data.frame(
@@ -243,7 +243,7 @@ set.plot.attributes<-function(
 
 	# correct line.width if necessary
 	# only change if defaults have been overwritten with poor inputs
-	if(length(plot.defaults$line.widths)!=(length(plot.defaults$line.breaks)-1)){	
+	if(length(plot.defaults$line.widths)!=length(plot.defaults$line.cols)){	
 		if(length(plot.defaults$line.widths)==1){
 			plot.defaults$line.widths<-rep(plot.defaults$line.widths, length(line.cols))
 		}else{if(length(plot.defaults$line.widths)>1){	# i.e. if a min and max is given, choose only the max value
