@@ -15,7 +15,7 @@ circleplot(distance.matrix, cluster, reduce, plot.control)
 
 }
 \value{
-Draws a plot showing the labels of the distance matrix as nodes around the circumference of a circle, with quadratic lines joining connected nodes. Invisibly returns point and line attributes.
+Draws a plot showing the labels of the distance matrix as nodes around the circumference of a circle, with parabolic lines joining them. Invisibly returns point and line attributes.
 }
 \description{
 Draws a circular plot of a distance matrix. 
@@ -33,7 +33,8 @@ options for plot.control are as follows:
     \item{line.cols}{vector containing colours, either named or hexadecimal. Used with 'line.breaks' above; length should equal length(breaks)-1.}
     \item{line.widths}{vector used to set line widths, passed to lines(lwd) in conjunction with 'line.breaks' above. If length-1, is the width of all lines, if length=length(breaks)-1, passed directly. For any other number of values, the maximum is chosen for all lines.}
     \item{line.expansion}{length-1 vector giving the percentage of the line width that is lost as the line approaches a vertex; i.e. one = strong tapering, zero=no tapering. }
-    \item{line.curvature}{A length-2 vector (or optionally, a list) that can be used to alter line straightness (i.e. the proportional curvature of the line). If given, must contain two values; the first is used to add curvature to all lines, the second multiplies the curvature by the distance between both points. Setting line.curvature[1]=0 gives boundary lines that lack any curvature, while setting both values to zero gives straight lines. Defaults to c(add=0.25, multiply=0.35), for consistency with earlier versions. Note that high values (>0.5) make the plot difficult to read, while setting high values for both attributes can cause points and lines to fail to intersect.}
+    \item{line.curvature}{length-2 vector (or optionally, a list) that can be used to alter line straightness (i.e. the proportional curvature of the line). If given, must contain two values; the first is used to add curvature to all lines, the second multiplies the curvature by the distance between both points. Setting line.curvature[1]=0 gives boundary lines that lack any curvature, while setting both values to zero gives straight lines. Defaults to c(add=0.25, multiply=0.35), for consistency with earlier versions. Note that high values (>0.5) make the plot difficult to read, while setting high values for both attributes can cause points and lines to fail to intersect.}
+    \item{arrows}{list containing up to three named arguments: length gives the length of the arrow; angle the 'sharpness' of the arrowhead (in degrees); and distance is the proportion of line length that the arrow should be placed. Defaults are arrows=list(length=0.07, angle=10, distance=0.75)}
 	\item{na.control}{command to control plotting of missing line values. Should be a list of commands to pass to lines(), defaulting to list(lwd=1, lty=2, col="grey"). Note that other values (i.e. supplying NA, or any object other than a list) suppresses plotting of missing values: this can be useful, but may be misleading, especially for binary matrices.}
 }
 }

@@ -16,7 +16,10 @@ circleplot<-function(
 	# call plot code
 	do.call("par", result$plot.control$par)
 	do.call("plot", result$plot.control$plot)
-	invisible(lapply(curve.list, FUN=function(x){draw.curves(x)}))
+	invisible(lapply(curve.list, FUN=function(x, asymmetric, arrow.attr){
+		draw.curves(x)
+		if(asymmetric)draw.arrows(x, arrow.attr)},
+		asymmetric=result$asymmetric, arrow.attr=result$plot.control$arrows))
 	do.call("points", as.list(result$points[, -1]))
 	
 	# label points
