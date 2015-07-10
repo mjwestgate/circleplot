@@ -37,9 +37,15 @@ check.inputs<-function(
 	}else{dataset<-input}
 
 	# check whether the input matrix is symmetric or asymmetric
-	dist1<-as.dist(as.matrix(dataset))
-	dist2<-as.dist(t(as.matrix(dataset)))
-	asymmetry.test<-any(c(dist1==dist2)==FALSE, na.rm=TRUE)
+	dist1<-as.vector(as.matrix(dataset))
+	dist2<-as.vector(t(as.matrix(dataset)))
+	asymmetry.vector<-apply(cbind(dist1, dist2), 1, FUN=function(x){
+		na.test<-as.character(length(which(is.na(x))))
+		switch(na.test,
+			"0"={return(x[1]==x[2])},
+			"1"={return(FALSE)},
+			"2"={return(TRUE)})})	
+	asymmetry.test<-any(asymmetry.vector==FALSE)
 
 	# export these as a list-based S3 object that can be passed to later functions
 	matrix.properties<-list(
@@ -286,7 +292,6 @@ set.plot.attributes<-function(
 	# ensure that labels are characters, not factors
 	plot.defaults$points$labels<-as.character(plot.defaults$points$labels)
 
-	# if only a subset of arrow attributes are given
 
 	# FUNCTIONS ON INPUT: SET POINT AND LINE ATTRIBUTES
 	# this behaviour partially depends on whether labels should be added
@@ -333,7 +338,7 @@ set.plot.attributes<-function(
 		}else{ # i.e. for numeric matrices
 			sign.lookup<-apply(positive.dframe, 1, FUN=function(x){
 				if(any(is.na(x)==FALSE)==FALSE){return(NA)
-				}else{return(which(x==max(x, na.rm=TRUE)))}})
+				}else{return(which(x==max(x, na.rm=TRUE))[1])}})
 			sign.value<-apply(cbind(sign.dframe, sign.lookup), 1, FUN=function(x){
 				if(is.na(x[3])){return(NA)}else{return(x[x[3]])}})
 			value.final<-value.initial*sign.value
