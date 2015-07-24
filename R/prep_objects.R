@@ -93,7 +93,6 @@ append.missed.columns<-function(
 
 
 
-
 # function to set plot defaults, and overwrite if new data is provided
 set.plot.attributes<-function(
 	input,	# result from check.inputs
@@ -117,6 +116,8 @@ set.plot.attributes<-function(
 		"na.control")
 	plot.defaults<-vector("list", length=length(control.names))
 	names(plot.defaults)<-control.names
+	# turn off clustering for numeric matrices
+	if(input$binary==FALSE)cluster<-FALSE
 
 	# overwrite these values where others are provided
 	if(missing(plot.control)==FALSE){
@@ -296,10 +297,6 @@ set.plot.attributes<-function(
 	# FUNCTIONS ON INPUT: SET POINT AND LINE ATTRIBUTES
 	# this behaviour partially depends on whether labels should be added
 	label.suppress.test<-is.logical(plot.defaults$point.labels) & length(plot.defaults$point.labels)==1
-	# note: formerly located in prep.binary & prep.numeric
-	# begin with point values
-	# point.names<-attr(input$dist, "Labels")
-	if(any(is.na(as.numeric(input$dist))))cluster<-FALSE
 	# make points for plotting
 	circle.points<-as.data.frame(
 		make.circle(n.points, alpha=plot.defaults$plot.rotation)[, 2:3])
@@ -309,6 +306,16 @@ set.plot.attributes<-function(
 		cluster.result<-hclust(dist.data)
 		circle.points$labels<-label.vals[cluster.result$order]
 		if(label.suppress.test==FALSE){plot.defaults$point.labels$labels<-label.vals[cluster.result$order]}
+	#	if(input$binary){
+		# dist.data<-input$dist
+		# cluster.result<-hclust(dist.data)
+		# node.labels<-label.vals[cluster.result$order]
+	#	}else{ # add function for calculating numeric distance
+		#	circle.points$labels<-label.vals # temporary fix
+			#cluster.result<-cluster.numeric(locations=circle.points, input=input$dist)
+			#node.labels<-cluster.result$labels}
+		# circle.points$labels<-node.labels
+		# if(label.suppress.test==FALSE){plot.defaults$point.labels$labels<-node.labels}
 	}else{circle.points$labels<-label.vals}
 	# add supp. info
 	circle.points$labels<-as.character(circle.points$labels)

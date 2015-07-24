@@ -2,7 +2,7 @@
 \alias{circleplot}
 \title{Plot a distance matrix}
 \usage{
-circleplot(distance.matrix, cluster, reduce, plot.control)
+circleplot(distance.matrix, cluster, reduce, add, plot.control)
 }
 \arguments{
   \item{distance.matrix}{a distance matrix (class dist) containing either continuous or binary data}
@@ -10,6 +10,8 @@ circleplot(distance.matrix, cluster, reduce, plot.control)
   \item{cluster}{logical - should points be rearranged using hclust? Defaults to TRUE, unless distance.matrix contains missing values, in which case cluster is set to FALSE and cannot be overwritten.}
 
   \item{reduce}{logical - should points with no connections be removed from the plot? Defaults to TRUE}
+
+  \item{add}{logical - should new points and lines be added to an existing circleplot? Defaults to FALSE}
 
   \item{plot.control}{a list giving information on how the plot should appear. If given, may contain any or all of the named objects given in notes (below).}
 

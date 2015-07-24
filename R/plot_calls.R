@@ -5,7 +5,8 @@ circleplot<-function(
 	input,	# a distance matrix (class 'dist') or square matrix (class matrix)
 	cluster=TRUE, # should points be  rearranged using hclust? Defaults to true
 	reduce=TRUE, # should points with no connections be removed?
-	plot.control	# a matrix containing plot attributes. See ?circleplot
+	add=FALSE,
+	plot.control,	# a matrix containing plot attributes. See ?circleplot
 	)
 	{
 	# initial processing
@@ -14,8 +15,9 @@ circleplot<-function(
 	curve.list<-get.curves(result)
 
 	# call plot code
-	do.call("par", result$plot.control$par)
-	do.call("plot", result$plot.control$plot)
+	if(add==FALSE){
+		do.call("par", result$plot.control$par)
+		do.call("plot", result$plot.control$plot)}
 	invisible(lapply(curve.list, FUN=function(x, asymmetric, arrow.attr){
 		draw.curves(x)
 		if(asymmetric)draw.arrows(x, arrow.attr)},
