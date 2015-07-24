@@ -6,7 +6,7 @@ circleplot<-function(
 	cluster=TRUE, # should points be  rearranged using hclust? Defaults to true
 	reduce=TRUE, # should points with no connections be removed?
 	add=FALSE,
-	plot.control,	# a matrix containing plot attributes. See ?circleplot
+	plot.control	# a matrix containing plot attributes. See ?circleplot
 	)
 	{
 	# initial processing
