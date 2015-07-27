@@ -75,10 +75,14 @@ append.missed.columns<-function(
 
 	keep.cols<-sapply(available.cols, FUN=function(x){any(specified.cols==x)})
 	add.cols<-which(keep.cols==FALSE)
+	add.names<-names(add.cols)
 
 	if(class(default)=="data.frame"){
 		if(length(add.cols)>0){
-			input<-as.data.frame(cbind(input, default[, add.cols]), stringsAsFactors=FALSE)}
+			input<-as.data.frame(cbind(input, default[, add.cols]), stringsAsFactors=FALSE)
+			new.cols<-c((ncol(input)-length(add.cols)+1):ncol(input))
+			colnames(input)[new.cols]<-add.names
+			}
 		# ensure 'labels' column is placed first
 		cols<-c(1:dim(input)[2])
 		label.col<-which(colnames(input)=="labels")
@@ -86,7 +90,10 @@ append.missed.columns<-function(
 		}
 	if(class(default)=="list"){
 		if(length(add.cols)>0){
-			input<-append(input, default[add.cols])}}
+			input<-append(input, default[add.cols])
+			new.entries<-c((length(input)-length(add.cols)+1):length(input))
+			names(input)[new.entries]<-add.names
+		}}
 	# export
 	return(input)
 	}
