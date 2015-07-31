@@ -23,8 +23,10 @@ check.inputs<-function(
 
 	# work out if input is binary or continuous
 	in.vals<-input[is.na(input)==FALSE]
-	binary.test<-( length(unique(in.vals))==2 & max(in.vals)==1 ) | (
-		length(unique(in.vals))==1 & unique(in.vals)==1 )
+	n.vals<-length(unique(in.vals))
+	if(n.vals==1){if(unique(in.vals)==1){binary.test<-TRUE}else{binary.test<-FALSE}}
+	if(n.vals==2){if(max(in.vals)==1){binary.test<-TRUE}else{binary.test<-FALSE}}
+	if(n.vals>2){binary.test<-FALSE}
 
 	# binary matrices may contain rows/columns with no data; remove these before continuing
 	if(binary.test & reduce){
