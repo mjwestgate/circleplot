@@ -22,9 +22,9 @@ check.inputs<-function(
 			rownames(input)<-c(1:dim(input)[1]); colnames(input)<-c(1:dim(input)[2])}}
 
 	# work out if input is binary or continuous
-	binary.test<-c(max(input, na.rm=TRUE)-min(input, na.rm=TRUE)==1,	
-		max(input, na.rm=TRUE)==1)
-	if(any(binary.test==FALSE)==FALSE){binary.test<-TRUE}else{binary.test<-FALSE}
+	in.vals<-input[is.na(input)==FALSE]
+	binary.test<-( length(unique(in.vals))==2 & max(in.vals)==1 ) | (
+		length(unique(in.vals))==1 & unique(in.vals)==1 )
 
 	# binary matrices may contain rows/columns with no data; remove these before continuing
 	if(binary.test & reduce){
@@ -387,7 +387,8 @@ set.plot.attributes<-function(
 	line.list$direction<-as.numeric(direction.matrix)
 	if(input$binary){
 		# remove 'absent' connections
-		line.list<-line.list[-which(line.list$value==0), ]
+		line.list<-line.list[which(line.list$value==1), ]
+		if(nrow(line.list)==0){stop("No connections are available to draw - binary input must contain some present values")}
 	}else{
 		# order line list by effect size
 		effect.size<-line.list$value^2
