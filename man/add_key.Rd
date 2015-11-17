@@ -9,14 +9,16 @@ add.key(circleplot.output, labels, exclude.lines, reverse, cex, ...)
   \item{labels}{(optional) replacement labels for line attributes}
   \item{exclude.lines}{numeric vector giving the lines that should be excluded from the plot (if any), counted from the top down}
   \item{reverse}{if TRUE (the default), reverses the order of lines in the key, such that high values are place above low values. Note that this command applies after label placement, so both 'labels' and 'exclude.lines' commands (above) must refer to intial order.}	
-  \item{cex}{character expansion factor, passed to lines()}
+  \item{side}{character giving the side that labels should be drawn; either 'right' (the default) or 'left'}
+  \item{cex}{character expansion factor for text}
+  \item{mar}{settings to override the default figure margins. See ?par for details}
   \item{...}{further information passed to plot()}
 }
 \value{
 Draws a simple key
 }
 \description{
-Draws a new plot, giving the key to an existing circleplot. Some care with cex, xlim & ylim is often necessary for optimal display in the current version.
+Draws a new plot, giving the key to an existing circleplot. Some care with cex and mar is often necessary for optimal display in the current version.
 }
 \examples{
 # generate some data
@@ -34,6 +36,6 @@ plot.object<-circleplot(numeric.dist, plot.control=list(
 	line.curvature=list(0.1, 0.3)))
 screen(2)
 par(mar=rep(0, 4))
-add.key(plot.object, xlim=c(0, 1), cex=0.6)
+add.key(plot.object, cex=0.6)
 close.screen(all=TRUE)
 }

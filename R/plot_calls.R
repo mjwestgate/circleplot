@@ -58,15 +58,20 @@ point.attr<-function(distance.matrix)
 
 
 # add keys to a circleplot
-add.key<-function (circleplot.result, labels, exclude.lines=999,  reverse=TRUE,
-	xlim=c(0.4, 1), ylim=c(-0.1, 1.1), cex=1, ...) 
+add.key<-function (circleplot.result, labels, exclude.lines=999,  reverse=TRUE, side="right",
+	cex=1, mar, ...) 
 	{
 	# prep
 	plot.list<-get.key.dframe(circleplot.result, exclude.lines, reverse, cex)
 	if(missing(labels)==FALSE){plot.list$text$labels<-labels}
+	if(side=="right"){side<-4; mar.default=c(1, 1, 1, 5)
+		}else{side<-2; mar.default =c(1, 5, 1, 1)}
+	if(missing(mar))mar<-mar.default
+	plot.list$text<-append(plot.list$text, list(side=side, cex.axis=cex))
 	# draw
-    plot(c(1) ~ c(1), ann = FALSE, axes = FALSE, type = "n", xlim = xlim, ylim = ylim, ...)
+	par(mar=mar)
+    plot(c(1) ~ c(1), ann = FALSE, axes = FALSE, type = "n", xlim =c(0, 1), ylim = c(0, 1), ...)
 	line.fun<-function(x0, x1, y0, y1, ...){lines(x=c(x0, x1), y=c(y0, y1), ...)}
 	invisible(lapply(split(plot.list$lines, c(1:nrow(plot.list$lines))), FUN=function(x){do.call("line.fun", x)}))
-	do.call("text", plot.list$text)
+	do.call("axis", plot.list$text)
 }

@@ -214,36 +214,45 @@ set.plot.attributes<-function(
 	if(is.null(plot.defaults$point.labels)){
 		plot.defaults$point.labels<-point.labels}
 
-	# set defaults for line cuts, colours etc - set all to grey by default
-	if(input$binary){
-			cut.vals<-c(-1, 2)	; line.cols<-"grey30"
-	}else{	# for numeric matrices
-		overlap.zero<-min(distance.matrix, na.rm=TRUE)<0 & max(distance.matrix, na.rm=TRUE)>0
-		if(overlap.zero){	# diverging colour palette
-			cut.vals<-c(
-				seq(min(distance.matrix, na.rm=TRUE)-0.001, 0, length.out=4)[1:3], 0, 
-				seq(0, max(distance.matrix, na.rm=TRUE)+0.001, length.out=4)[2:4])
-			line.cols<-brewer.pal(6, "RdBu")[6:1]
-		}else{	# sequential colour palette
-			if(any(distance.matrix=="Inf", na.rm=TRUE)){
-				cut.vals<-as.numeric(c(
-				seq(
-					min(distance.matrix, na.rm=TRUE)-0.001,
-					max(distance.matrix[-which(distance.matrix=="Inf")]+0.001, na.rm=TRUE), 
-					length.out=6),
-				"Inf"))
-			}else{
-				cut.vals<-seq(min(distance.matrix, na.rm=TRUE)-0.001, 
-				max(distance.matrix, na.rm=TRUE)+0.001, length.out=7)}
-			line.cols<-brewer.pal(6, "Purples")}
-	}	# end colour selection	
-
 	# arrow defaults
 	arrow.defaults<-list(angle=10, length=0.07, distance=0.75)
 	if(is.null(plot.defaults$arrows)){plot.defaults$arrows<-arrow.defaults
 	}else{
 		if(length(plot.control$arrows)!=3){
 		plot.defaults$arrows<-append.missed.columns(plot.control$arrows, arrow.defaults)}}
+
+	# sort out line attributes
+	# be careful to ensure that the user can supply any combination of values and they will be used sensibly
+	# issue before was that is breaks were supplied, cols/widths did not take that into account
+	line.attr<-lapply(plot.defaults, function(x){is.null(x)==FALSE})[6:8]
+	if(any(line.attr==TRUE)){
+		if(line.attr$line.breaks){n.lines<-length(plot.defaults$line.breaks)-1}
+		if(line.attr$line.cols){n.lines<-length(plot.defaults$line.cols)}
+		if(line.attr$line.widths){n.lines<-length(plot.defaults$line.widths)}
+	}else{n.lines=5}
+
+	# set defaults for line cuts, colours etc - set all to grey by default
+	if(input$binary){
+			cut.vals<-c(-1, 2)	; line.cols<-"grey30"
+	}else{	# for numeric matrices
+		overlap.zero<-min(distance.matrix, na.rm=TRUE)<0 & max(distance.matrix, na.rm=TRUE)>0
+		if(overlap.zero){	# diverging colour palette
+			max.val<-max(sqrt(distance.matrix^2), na.rm=TRUE)+0.001
+			cut.vals<-seq(-max.val, max.val, length.out=n.lines+1)
+			line.cols<-brewer.pal(n.lines, "RdBu")[n.lines:1]
+		}else{	# sequential colour palette
+			if(any(distance.matrix=="Inf", na.rm=TRUE)){
+				cut.vals<-as.numeric(c(
+				seq(
+					min(distance.matrix, na.rm=TRUE)-0.001,
+					max(distance.matrix[-which(distance.matrix=="Inf")]+0.001, na.rm=TRUE), 
+					length.out=n.lines+1),
+				"Inf"))
+			}else{
+				cut.vals<-seq(min(distance.matrix, na.rm=TRUE)-0.001, 
+				max(distance.matrix, na.rm=TRUE)+0.001, length.out=n.lines+1)}
+			line.cols<-brewer.pal(n.lines, "Purples")}
+	}	# end colour selection	
 
 	# add to plot.default
 	if(is.null(plot.defaults$line.gradient)){plot.defaults$line.gradient<-FALSE}
@@ -383,9 +392,18 @@ set.plot.attributes<-function(
 	}
 
 	# now work out line attr
-	line.list<-data.frame(t(combn(label.vals, 2)), stringsAsFactors=FALSE)
-		colnames(line.list)<-c("sp1", "sp2")
-	line.list$value<-as.numeric(input$dist)
+	if(input$asymmetric){
+		line.list<-rbind(t(combn(label.vals, 2)), t(combn(label.vals, 2))[, c(2, 1)],
+			matrix(rep(label.vals, each=2), nrow=length(label.vals), ncol=2, byrow=TRUE))
+		order.list<-rbind(t(combn(c(1:length(label.vals)), 2)), 
+			t(combn(c(1:length(label.vals)), 2))[, c(2, 1)],
+			matrix(rep(c(1:length(label.vals)), each=2), nrow=length(label.vals), ncol=2, byrow=TRUE))
+		line.list<-as.data.frame(line.list[order(order.list[, 1], order.list[, 2]), ], stringsAsFactors=FALSE)
+		line.list$value<-as.numeric(input$dist)
+	}else{
+		line.list<-data.frame(t(combn(label.vals, 2)), stringsAsFactors=FALSE)
+		line.list$value<-as.numeric(as.dist(input$dist))}
+	colnames(line.list)[1:2]<-c("sp1", "sp2")
 	line.list$direction<-as.numeric(direction.matrix)
 	if(input$binary){
 		# remove 'absent' connections
@@ -438,7 +456,7 @@ set.plot.attributes<-function(
 
 
 # function to add get a data.frame in the correct format to draw a key from a circleplot object
-get.key.dframe<-function(circleplot.result, exclude.lines, reverse, cex){
+get.key.dframe<-function(circleplot.result, exclude.lines, reverse, cex, right){
 
 	# get info from source object
     breaks <- circleplot.result$plot.control$line.breaks
@@ -466,22 +484,21 @@ get.key.dframe<-function(circleplot.result, exclude.lines, reverse, cex){
 		line.data[nrow(line.data), col]<-na.info[i]}}
 	
 	# group data into a single data.frame that can be passed to lines by do.call
-	line.frame<-cbind(data.frame(x0=0.5, x1=1, y0=1, y1=1),line.data)
-	text.frame<-data.frame(x=rep(0.5, nlines), y=1, cex=cex, pos=2, stringsAsFactors=FALSE)
-	labels.initial<-c(paste(breaks[c(1:(length(breaks)-1))], "-", breaks[c(2:length(breaks))], sep=" "), "NA")
-	text.frame$labels<-labels.initial
+	line.frame<-cbind(data.frame(x0=0, x1=1, y0=1, y1=1), line.data)
+	text.labels<-c(
+		paste(breaks[c(1:(length(breaks)-1))], "-", breaks[c(2:length(breaks))], sep=" "), "NA")
 
 	# exclude lines as requested by user
 	exclude.na<-c(na.present==FALSE | any(exclude.lines==nrow(line.data)))
 	if(exclude.na){
 		line.frame<-line.frame[-nlines, ]
-		text.frame<-text.frame[-nlines, ]
+		text.labels<-text.labels[-nlines]
 		}
 	if(any(exclude.lines==nlines)){exclude.lines<-exclude.lines[-which(exclude.lines==nlines)]}
 	exclude.test<-c(length(exclude.lines)>0 & any(exclude.lines==999)==FALSE)
 	if(exclude.test){	
 		line.frame<-line.frame[-exclude.lines, ]
-		text.frame<-text.frame[-exclude.lines, ]
+		text.labels<-text.labels[-exclude.lines]
 		}
 	nlines<-nrow(line.frame)
 
@@ -489,11 +506,11 @@ get.key.dframe<-function(circleplot.result, exclude.lines, reverse, cex){
 	if(reverse){
 		if(exclude.na){line.order<-c(nlines:1)}else{line.order<-c((nlines-1):1, nlines)} # NA values always placed last
 		line.frame<-line.frame[line.order, ]
-		text.frame<-text.frame[line.order, ]}
+		text.labels <-text.labels[line.order]}
 	y.vals <- seq(1, 0, length.out = nlines)
 	line.frame$y0<-y.vals; line.frame$y1<-y.vals
-	text.frame$y<-y.vals
+	text.list<-list(at=y.vals, labels=text.labels, tick=FALSE, las=1)
 
 	# return object
-	return(list(lines=line.frame, text=text.frame))
+	return(list(lines=line.frame, text=text.list))
 	}
