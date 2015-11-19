@@ -3,10 +3,10 @@
 # function to use the above code to draw a figure
 circleplot<-function(
 	input,	# a distance matrix (class 'dist') or square matrix (class matrix)
-	cluster=TRUE, # should points be  rearranged using hclust? Defaults to true
-	reduce=TRUE, # should points with no connections be removed?
+	cluster=TRUE, # should points be  rearranged using hclust? Defaults to TRUE, but currently always FALSE for numeric inputs
+	reduce=TRUE, # should nodes with no connections be removed?
 	add=FALSE,
-	plot.control	# a matrix containing plot attributes. See ?circleplot
+	plot.control	# a list containing plot attributes. See ?circleplot
 	)
 	{
 	# initial processing

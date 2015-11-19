@@ -5,12 +5,20 @@ check.inputs<-function(
 	)
 	{
 	# set error messages
-	if(any(c("dist", "matrix")==class(input))==F){
-		stop('circleplot only accepts objects of class dist or matrix as inputs')}
+	# incorrect input class
+	if(any(c("dist", "matrix", "data.frame")==class(input))==F){
+		stop('circleplot only accepts inputs from the following classes: dist, matrix or data.frame')}
+	# matrices of incorrect shape
 	if(class(input)=="matrix"){
 		if(dim(input)[1]!=dim(input)[2]){	
 			stop('circleplot only accepts square matrices')}
 		for(i in 1:dim(input)[1]){input[i, i]<-NA}	# set diagonal values to NA
+		}
+	# data.frames with incorrect ncol; convert to wide format for consistency
+	if(class(input)=="data.frame"){
+		if(ncol(input)>3){stop('input data.frame has too many columns; please supply data with n=3 columns')
+		}else{if(ncol(input)<3){stop('input data.frame has too few columns; please supply data with n=3 columns')}}
+		input<-make.wide.format(input)
 		}
 
 	# if there are no row or column headings, add these now
@@ -241,13 +249,13 @@ set.plot.attributes<-function(
 			cut.vals<-seq(-max.val, max.val, length.out=n.lines+1)
 			line.cols<-brewer.pal(n.lines, "RdBu")[n.lines:1]
 		}else{	# sequential colour palette
-			if(any(distance.matrix=="Inf", na.rm=TRUE)){
-				cut.vals<-as.numeric(c(
-				seq(
-					min(distance.matrix, na.rm=TRUE)-0.001,
-					max(distance.matrix[-which(distance.matrix=="Inf")]+0.001, na.rm=TRUE), 
-					length.out=n.lines+1),
-				"Inf"))
+			if(any((distance.matrix^2)==Inf, na.rm=TRUE)){
+				cut.vals<-seq(
+					min(distance.matrix[which(distance.matrix!=-Inf)], na.rm=TRUE)-0.001,
+					max(distance.matrix[which(distance.matrix!=Inf)]+0.001, na.rm=TRUE), 
+					length.out=n.lines+1)
+				if(any(distance.matrix==Inf, na.rm=TRUE)){cut.vals[length(cut.vals)]<-Inf}
+				if(any(distance.matrix==-Inf, na.rm=TRUE)){cut.vals[1]<-(-Inf)}				
 			}else{
 				cut.vals<-seq(min(distance.matrix, na.rm=TRUE)-0.001, 
 				max(distance.matrix, na.rm=TRUE)+0.001, length.out=n.lines+1)}
@@ -280,7 +288,8 @@ set.plot.attributes<-function(
 
 	# ensure correct number of colours and widths added
 	if(length(plot.defaults$line.cols)!=(length(plot.defaults$line.breaks)-1)){
-		stop("Specified number of line.cols does not match number of line.breaks; please adjust inputs to plot.control")}
+		if(length(lot.defaults$line.cols!=1)){
+			stop("Specified number of line.cols does not match number of line.breaks; please adjust inputs to plot.control")}}
 
 	# correct line.width if necessary
 	# only change if defaults have been overwritten with poor inputs
@@ -320,20 +329,13 @@ set.plot.attributes<-function(
 		make.circle(n.points, alpha=plot.defaults$plot.rotation)[, 2:3])
 	# reorder (or not)
 	if(cluster){
-		if(input$binary){dist.data<-input$dist}else{dist.data<-as.dist(1-(sqrt(input$dist^2)))}
+		if(input$binary){
+			if(input$asymmetric){dist.data<-2-(as.dist(input$dist) + as.dist(t(input$dist)))
+			}else{dist.data<-1-input$dist}
+		}else{dist.data<-as.dist(1-(sqrt(input$dist^2)))}
 		cluster.result<-hclust(dist.data)
 		circle.points$labels<-label.vals[cluster.result$order]
 		if(label.suppress.test==FALSE){plot.defaults$point.labels$labels<-label.vals[cluster.result$order]}
-	#	if(input$binary){
-		# dist.data<-input$dist
-		# cluster.result<-hclust(dist.data)
-		# node.labels<-label.vals[cluster.result$order]
-	#	}else{ # add function for calculating numeric distance
-		#	circle.points$labels<-label.vals # temporary fix
-			#cluster.result<-cluster.numeric(locations=circle.points, input=input$dist)
-			#node.labels<-cluster.result$labels}
-		# circle.points$labels<-node.labels
-		# if(label.suppress.test==FALSE){plot.defaults$point.labels$labels<-node.labels}
 	}else{circle.points$labels<-label.vals}
 	# add supp. info
 	circle.points$labels<-as.character(circle.points$labels)
@@ -392,19 +394,8 @@ set.plot.attributes<-function(
 	}
 
 	# now work out line attr
-	if(input$asymmetric){
-		line.list<-rbind(t(combn(label.vals, 2)), t(combn(label.vals, 2))[, c(2, 1)],
-			matrix(rep(label.vals, each=2), nrow=length(label.vals), ncol=2, byrow=TRUE))
-		order.list<-rbind(t(combn(c(1:length(label.vals)), 2)), 
-			t(combn(c(1:length(label.vals)), 2))[, c(2, 1)],
-			matrix(rep(c(1:length(label.vals)), each=2), nrow=length(label.vals), ncol=2, byrow=TRUE))
-		line.list<-as.data.frame(line.list[order(order.list[, 1], order.list[, 2]), ], stringsAsFactors=FALSE)
-		line.list$value<-as.numeric(input$dist)
-	}else{
-		line.list<-data.frame(t(combn(label.vals, 2)), stringsAsFactors=FALSE)
-		line.list$value<-as.numeric(as.dist(input$dist))}
-	colnames(line.list)[1:2]<-c("sp1", "sp2")
-	line.list$direction<-as.numeric(direction.matrix)
+	line.list<-make.long.format(as.matrix(input$dist))
+	line.list$direction<-as.numeric(direction.matrix) 
 	if(input$binary){
 		# remove 'absent' connections
 		line.list<-line.list[which(line.list$value==1), ]
@@ -414,9 +405,10 @@ set.plot.attributes<-function(
 		effect.size<-line.list$value^2
 		line.list<-line.list[order(effect.size), ]}
 	# place NA values first (so they are underneath drawn values)
-	line.list<-line.list[c(
-		which(is.na(line.list$value)==TRUE), 
-		which(is.na(line.list$value)==FALSE)), ]
+	if(any(is.na(line.list$value))){
+		line.list<-line.list[c(
+			which(is.na(line.list$value)==TRUE), 
+			which(is.na(line.list$value)==FALSE)), ]}
 
 	# ALLOW USER SPECIFICATION OF X, Y LIMITS
 	# determine margins
