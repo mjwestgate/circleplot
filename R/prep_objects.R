@@ -288,7 +288,7 @@ set.plot.attributes<-function(
 
 	# ensure correct number of colours and widths added
 	if(length(plot.defaults$line.cols)!=(length(plot.defaults$line.breaks)-1)){
-		if(length(lot.defaults$line.cols!=1)){
+		if(length(plot.defaults$line.cols!=1)){
 			stop("Specified number of line.cols does not match number of line.breaks; please adjust inputs to plot.control")}}
 
 	# correct line.width if necessary
