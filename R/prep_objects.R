@@ -56,6 +56,10 @@ check.inputs<-function(
 			"1"={return(FALSE)},
 			"2"={return(TRUE)})})	
 	asymmetry.test<-any(asymmetry.vector==FALSE)
+	
+	# correct case where symmetric matrices are not passed as class dist 
+	# (usually when provided as data.frames)
+	if(class(dataset)=="matrix" & asymmetry.test==FALSE){dataset<-as.dist(dataset)}
 
 	# export these as a list-based S3 object that can be passed to later functions
 	matrix.properties<-list(
@@ -331,7 +335,7 @@ set.plot.attributes<-function(
 	if(cluster){
 		if(input$binary){
 			if(input$asymmetric){dist.data<-2-(as.dist(input$dist) + as.dist(t(input$dist)))
-			}else{dist.data<-1-input$dist}
+			}else{dist.data<-as.dist(1-input$dist)}
 		}else{dist.data<-as.dist(1-(sqrt(input$dist^2)))}
 		cluster.result<-hclust(dist.data)
 		circle.points$labels<-label.vals[cluster.result$order]
