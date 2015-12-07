@@ -33,7 +33,8 @@ check.inputs<-function(
 	in.vals<-input[is.na(input)==FALSE]
 	n.vals<-length(unique(in.vals))
 	if(n.vals==1){if(unique(in.vals)==1){binary.test<-TRUE}else{binary.test<-FALSE}}
-	if(n.vals==2){if(max(in.vals)==1){binary.test<-TRUE}else{binary.test<-FALSE}}
+	if(n.vals==2){if(max(in.vals)==1 & min(in.vals)==0){binary.test<-TRUE
+		}else{binary.test<-FALSE}}
 	if(n.vals>2){binary.test<-FALSE}
 
 	# binary matrices may contain rows/columns with no data; remove these before continuing
@@ -243,6 +244,14 @@ set.plot.attributes<-function(
 		if(line.attr$line.widths){n.lines<-length(plot.defaults$line.widths)}
 	}else{n.lines=5}
 
+	# ensure brewer.pal returns values for nlines <3
+	brewer.pal.safe<-function(n, pal, type){
+		if(n>=3){brewer.pal(n, pal)
+		}else{
+			if(type=="increasing"){brewer.pal(3, pal)[sort(c(3:1)[c(1:n)])]}
+			if(type=="diverging"){brewer.pal(3, pal)[c(1, 3)]} # assumes that no-one will be able to call diverging w n=1
+		}}
+
 	# set defaults for line cuts, colours etc - set all to grey by default
 	if(input$binary){
 			cut.vals<-c(-1, 2)	; line.cols<-"grey30"
@@ -251,7 +260,7 @@ set.plot.attributes<-function(
 		if(overlap.zero){	# diverging colour palette
 			max.val<-max(sqrt(distance.matrix^2), na.rm=TRUE)+0.001
 			cut.vals<-seq(-max.val, max.val, length.out=n.lines+1)
-			line.cols<-brewer.pal(n.lines, "RdBu")[n.lines:1]
+			line.cols<-brewer.pal.safe(n.lines, "RdBu", type="diverging")[c(n.lines:1)]
 		}else{	# sequential colour palette
 			if(any((distance.matrix^2)==Inf, na.rm=TRUE)){
 				cut.vals<-seq(
@@ -263,7 +272,7 @@ set.plot.attributes<-function(
 			}else{
 				cut.vals<-seq(min(distance.matrix, na.rm=TRUE)-0.001, 
 				max(distance.matrix, na.rm=TRUE)+0.001, length.out=n.lines+1)}
-			line.cols<-brewer.pal(n.lines, "Purples")}
+			line.cols<-brewer.pal.safe(n.lines, "Purples", type="increasing")}
 	}	# end colour selection	
 
 	# add to plot.default
