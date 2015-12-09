@@ -1,1 +1,1 @@
-export(circleplot, add.key, point.attr, make.circle)
+export(circleplot, add.key, point.attr, make.circle, make.long.format, make.wide.format)

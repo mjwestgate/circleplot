@@ -1,7 +1,7 @@
 ## FUNCTIONS TO PROCESS DATA
 # Note: these are currently identical to functions in sppairs, but are duplicated here to reduce dependencies.
 
-# function to make a square (asymmetric) distance matrix of odds ratios
+# function to make a square matrix from a data.frame
 make.wide.format<-function(
 	input	# result from spaa()
 	){
@@ -31,7 +31,7 @@ make.wide.format<-function(
 	}
 
 
-# function to convert a square matrix to a 3-column dataframe (i.e. inverse of make.wide.format)
+# function to make a 3-column data.frame from a square matrix (i.e. inverse of make.wide.format)
 make.long.format<-function(input){
 	# get basic summaries
 	asymmetric<-any(c(input==t(input))==FALSE, na.rm=TRUE)
