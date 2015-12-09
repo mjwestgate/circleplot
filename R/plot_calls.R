@@ -1,11 +1,39 @@
 # plot functions - called by user
 
-# function to use the above code to draw a figure
+# wrapper function
 circleplot<-function(
+	input,	# any of class = list, matrix, dist, data.frame
+	...
+	){
+	if(class(input)=="list"){run.circleplot.multiple(input, ...)
+	}else{run.circleplot.single(input, ...)}
+	}
+
+
+
+
+# function to return a sensible outcome if multiple plots are required
+# goal here is to ensure that all plots have the same points on their respective circumferences
+run.circleplot.multiple<-function(
+	input,	# a distance matrix (class 'dist') or square matrix (class matrix)
+	add=FALSE, # should this figure be added to an existing plot? 
+	...
+	){
+	dataset<-make.consistent(input)
+	if(add==FALSE)par(mfrow=panel.dims(length(input)))
+	# invisible(lapply(dataset, FUN=function(x){run.circleplot.single(x, ...)},
+		# ...=...))
+	 invisible(lapply(dataset, FUN=function(x){run.circleplot.single(x, ...)}))
+	}
+
+
+
+# function to draw a figure, if supplied with a data.frame or matrix
+run.circleplot.single<-function(
 	input,	# a distance matrix (class 'dist') or square matrix (class matrix)
 	cluster=TRUE, # should points be  rearranged using hclust? Defaults to TRUE, but currently always FALSE for numeric inputs
 	reduce=TRUE, # should nodes with no connections be removed?
-	add=FALSE,
+	add=FALSE, # should this figure be added to an existing plot? 
 	plot.control	# a list containing plot attributes. See ?circleplot
 	)
 	{
@@ -33,6 +61,7 @@ circleplot<-function(
 	# return information as needed
 	return(invisible(result))
 	}
+
 
 
 

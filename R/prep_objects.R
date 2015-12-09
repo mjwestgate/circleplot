@@ -519,3 +519,41 @@ get.key.dframe<-function(circleplot.result, exclude.lines, reverse, cex, right){
 	# return object
 	return(list(lines=line.frame, text=text.list))
 	}
+
+
+# Functions for accepting lists as inputs
+# take all inputs in a list, and return a list that contains all species in each entry
+make.consistent<-function(x){
+# work out which species are present in all datasets
+	# first create a dataframe that lists which species are present in each dataset
+	species.lists<-lapply(x, FUN=function(x){unique(c(x[, 1], x[, 2]))})
+	all.species<-unique(unlist(species.lists))
+
+	result<-lapply(x, FUN=function(y, comp){
+		if(class(y)=="data.frame"){y<-make.wide.format(y)}else{y<-as.matrix(y)}
+		lookup<-sapply(comp, FUN=function(z, this.list){
+			if(any(this.list ==z)){return(TRUE)}else{return(FALSE)}}, this.list =colnames(y))
+		missing.rows<-which(lookup==FALSE)
+		new.cols<-matrix(data=NA, nrow=nrow(y), ncol=length(missing.rows))
+			colnames(new.cols)<-all.species[missing.rows]
+		output <-cbind(y, new.cols)
+		new.rows<-matrix(data=NA, nrow=length(missing.rows), ncol=ncol(output))
+			rownames(new.rows)<-all.species[missing.rows]
+		output <-rbind(output, new.rows)
+		col.order<-order(colnames(output))
+		output <-output[col.order, col.order]
+		return(output)
+		}, comp=all.species)
+	return(result)
+	}
+
+
+# function to work out how many panels to include for run.circleplot.multiple
+panel.dims<-function(n){
+	x<-sqrt(n)
+	low<-floor(x)
+	high<-ceiling(x)
+	if((low*high)>=n){return(c(low, high))
+	}else{return(rep(high, 2))}
+	}
+
