@@ -1,4 +1,6 @@
 add.key		Draw a simple key for a plot
+calc.overlap	Identify species that are present in >1 datasets stored in a list
+clean.list	Take a list of datasets and return in a standardised form
 circleplot	Draw a plot
 make.circle	Return a set of points on the circumference of a circle
 make.long.format	Convert a matrix to a data.frame

@@ -10,21 +10,42 @@ circleplot<-function(
 	}
 
 
-
-
 # function to return a sensible outcome if multiple plots are required
 # goal here is to ensure that all plots have the same points on their respective circumferences
 run.circleplot.multiple<-function(
 	input,	# a distance matrix (class 'dist') or square matrix (class matrix)
+	plot.control, 
 	add=FALSE, # should this figure be added to an existing plot? 
+	type="OR",
 	...
 	){
-	dataset<-make.consistent(input)
+	comparison<-calc.overlap(input)
+	dataset<-clean.list(input, type=type)
+	n<-length(dataset)
 	if(add==FALSE)par(mfrow=panel.dims(length(input)))
-	# invisible(lapply(dataset, FUN=function(x){run.circleplot.single(x, ...)},
-		# ...=...))
-	 invisible(lapply(dataset, FUN=function(x){run.circleplot.single(x, ...)}))
-	}
+
+	if(type=="OR"){
+	for(i in 1:n){
+		missing.rows<-which(comparison[, i]==FALSE)
+		point.dframe<-data.frame(labels=rownames(comparison), col="grey30", pch=19, stringsAsFactors=FALSE)
+		point.dframe$col[missing.rows]<-"grey60"
+
+		if(missing(plot.control)){plot.control.thisrun<-list(points=point.dframe)
+		}else{
+			plot.control.thisrun<-plot.control
+			if(any(names(plot.control.thisrun)=="points")){
+				point.dframe<-do.call("data.frame", append(list(labels=rownames(comparison)), plot.control.thisrun$points))
+				if(any(colnames(point.dframe)=="col")){point.dframe$col[missing.rows]<-"grey60"
+				}else{point.dframe$col<-"grey30"; point.dframe$col[missing.rows]<-"grey60"}
+				plot.control.thisrun$points<-point.dframe
+			}else{plot.control.thisrun$points<-point.dframe}}
+		run.circleplot.single(dataset[[i]], plot.control=plot.control.thisrun, ...)
+		}
+	}else{ # type=AND
+		invisible(lapply(dataset, FUN=function(x){run.circleplot.single(x, ...)}))
+		}	
+	return(invisible(dataset))
+}
 
 
 
@@ -32,9 +53,10 @@ run.circleplot.multiple<-function(
 run.circleplot.single<-function(
 	input,	# a distance matrix (class 'dist') or square matrix (class matrix)
 	cluster=TRUE, # should points be  rearranged using hclust? Defaults to TRUE, but currently always FALSE for numeric inputs
-	reduce=TRUE, # should nodes with no connections be removed?
+	reduce=FALSE, # should nodes with no connections be removed?
 	add=FALSE, # should this figure be added to an existing plot? 
-	plot.control	# a list containing plot attributes. See ?circleplot
+	plot.control,	# a list containing plot attributes. See ?circleplot
+	...
 	)
 	{
 	# initial processing

@@ -57,3 +57,65 @@ make.long.format<-function(input){
 	line.list<-line.list[order(line.list$sp1, line.list$sp2), ] # consistent order
 	return(line.list) # export
 	}
+
+
+# Functions on lists
+
+# take a list containing co-occurrence data, and return a list of the same length, 
+# but with only those species shared among all datasets (type="AND") 
+# or all species present in any dataset (type="OR", the default)
+clean.list<-function(x, type="OR"){
+	if(any(c("AND", "OR")==type)==FALSE)stop("Specified 'type' not permitted; please specify AND or OR")
+	# first ensure that data are in the same (wide) format
+	x<-lapply(x, function(y){
+		if(class(y)=="data.frame"){y<-make.wide.format(y)}else{y<-as.matrix(y)}})
+	n<-length(x)
+	comparison<-calc.overlap(x)
+	if(type=="OR"){
+		all.species<-rownames(comparison)
+		for(i in 1:n){
+			y<-x[[i]]
+			missing.rows<-which(comparison[, i]==FALSE)
+			new.cols<-matrix(data=NA, nrow=nrow(y), ncol=length(missing.rows))
+				colnames(new.cols)<-all.species[missing.rows]
+			output <-cbind(y, new.cols)
+			new.rows<-matrix(data=NA, nrow=length(missing.rows), ncol=ncol(output))
+				rownames(new.rows)<-all.species[missing.rows]
+			output <-rbind(output, new.rows)
+			col.order<-order(colnames(output))
+			x[[i]]<-output[col.order, col.order]	
+		}
+	}else{
+		and.test<-apply(comparison, 1, FUN=function(y){any(y==FALSE)==FALSE})
+		keep.rows<-which(and.test)
+		if(length(keep.rows)==0){stop("No species are present in all datasets; try type='OR'")
+		}else{
+			all.species<-rownames(comparison)[keep.rows]
+			for(i in 1:n){
+				y<-x[[i]]
+				keep.cols<-which(sapply(colnames(y), 
+					FUN=function(z, comp){any(comp==z)}, comp=all.species))
+				output<-y[keep.cols, keep.cols]
+				col.order<-order(colnames(output))
+				x[[i]]<-output[col.order, col.order]			
+			}		
+	}}
+	return(x)
+	}
+
+
+# calculate which species are present in each dataset within a list, and return the result as a data.frame
+calc.overlap<-function(x){
+	# first ensure that data are in the same (wide) format
+	x<-lapply(x, function(y){
+		if(class(y)=="data.frame"){y<-make.wide.format(y)}else{y<-as.matrix(y)}})
+	# get list of species names
+	species.lists<-lapply(x, FUN=function(x){colnames(x)})
+	all.species<-unique(unlist(species.lists))
+	# calculate which species are present in each dataset
+	result<-lapply(x, FUN=function(y, comp){
+		sapply(comp, FUN=function(z, this.list){
+			if(any(this.list ==z)){return(TRUE)}else{return(FALSE)}}, this.list =colnames(y))
+		}, comp=all.species)
+	as.data.frame(result)
+	}
