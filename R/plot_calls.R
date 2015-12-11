@@ -30,7 +30,7 @@ run.circleplot.multiple<-function(
 		point.dframe<-data.frame(labels=rownames(comparison), col="grey30", pch=19, stringsAsFactors=FALSE)
 		point.dframe$col[missing.rows]<-"grey60"
 
-		if(missing(plot.control)){plot.control.thisrun<-list(points=point.dframe)
+		if(missing(plot.control)){plot.control.thisrun<-list(points=point.dframe, na.control=NA)
 		}else{
 			plot.control.thisrun<-plot.control
 			if(any(names(plot.control.thisrun)=="points")){
@@ -38,7 +38,9 @@ run.circleplot.multiple<-function(
 				if(any(colnames(point.dframe)=="col")){point.dframe$col[missing.rows]<-"grey60"
 				}else{point.dframe$col<-"grey30"; point.dframe$col[missing.rows]<-"grey60"}
 				plot.control.thisrun$points<-point.dframe
-			}else{plot.control.thisrun$points<-point.dframe}}
+			}else{plot.control.thisrun$points<-point.dframe}
+			if(any(names(plot.control.thisrun)=="na.control")==FALSE){plot.control.thisrun$na.control<-NA}
+			}
 		run.circleplot.single(dataset[[i]], plot.control=plot.control.thisrun, ...)
 		}
 	}else{ # type=AND
