@@ -46,7 +46,7 @@ run.circleplot.multiple<-function(
 	}else{ # type=AND
 		invisible(lapply(dataset, FUN=function(x){run.circleplot.single(x, ...)}))
 		}	
-	par(mfrow=c(1, 1))
+	if(add==FALSE)par(mfrow=c(1, 1))
 	return(invisible(dataset))
 }
 
