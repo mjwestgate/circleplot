@@ -8,29 +8,39 @@ check.inputs<-function(
 	# incorrect input class
 	if(any(c("dist", "matrix", "data.frame")==class(input))==F){
 		stop('circleplot only accepts inputs from the following classes: dist, matrix or data.frame')}
-	# matrices of incorrect shape
-	if(class(input)=="matrix"){
-		if(dim(input)[1]!=dim(input)[2]){	
-			stop('circleplot only accepts square matrices')}
-		for(i in 1:dim(input)[1]){input[i, i]<-NA}	# set diagonal values to NA
-		}
-	# data.frames with incorrect ncol; convert to wide format for consistency
-	if(class(input)=="data.frame"){
-		if(ncol(input)>3){stop('input data.frame has too many columns; please supply data with n=3 columns')
-		}else{if(ncol(input)<3){stop('input data.frame has too few columns; please supply data with n=3 columns')}}
-		input<-make.wide.format(input)
-		}
-
-	# if there are no row or column headings, add these now
-	if(class(input)=="dist"){
-		if(length(attr(input, "Labels"))==0){
-			attr(input, "Labels")<-c(1:attr(input, "Size"))}
-	}else{	# i.e. class=="matrix"
-		if(length(colnames(input))==0){
-			rownames(input)<-c(1:dim(input)[1]); colnames(input)<-c(1:dim(input)[2])}}
+	
+	# ensure that long and wide versions are returned, regardless of input
+	switch(class(input),
+		"matrix"={
+			if(dim(input)[1]!=dim(input)[2]){stop('circleplot only accepts square matrices')}
+			wide<-input; for(i in 1:dim(wide)[1]){wide[i, i]<-NA}	# set diagonal values to NA
+			# if there are no row or column headings, add these now
+			long<-make.long.format(input)
+			if(length(colnames(wide))==0){wide<-make.wide.format(long)}
+			check.distance<-make.dist.format(long)
+			distance<-check.distance$dist.matrix
+			asymmetric<-check.distance$asymmetric
+			},
+		"data.frame"={
+			if(ncol(input)<3){stop('input data.frame has too few columns; please supply data with n>=3 columns')}#}
+			long<-input
+			wide<-make.wide.format(input[, 1:3])
+			check.distance<-make.dist.format(input)
+			distance<-check.distance$dist.matrix
+			asymmetric<-check.distance$asymmetric
+			},
+		"dist"={
+			if(length(attr(input, "Labels"))<1){
+				attr(input, "Labels")<-paste("V", c(1:attr(input, "Size")), sep="")}
+			wide<-as.matrix(input)
+			long<-make.long.format(wide)
+			check.distance<-make.dist.format(long) # this is needed to avoid NA values in the distance matrix
+			distance<-check.distance$dist.matrix
+			asymmetric<-check.distance$asymmetric
+			})
 
 	# work out if input is binary or continuous
-	in.vals<-input[is.na(input)==FALSE]
+	in.vals<-long[is.na(long[, 3])==FALSE, 3]
 	n.vals<-length(unique(in.vals))
 	if(n.vals==1){if(unique(in.vals)==1){binary.test<-TRUE}else{binary.test<-FALSE}}
 	if(n.vals==2){if(max(in.vals)==1 & min(in.vals)==0){binary.test<-TRUE
@@ -38,37 +48,29 @@ check.inputs<-function(
 	if(n.vals>2){binary.test<-FALSE}
 
 	# binary matrices may contain rows/columns with no data; remove these before continuing
-	if(binary.test & reduce){
-		if(class(input)=="matrix"){dataset<-input}else{dataset<-as.matrix(input)}
-		keep.rows<-as.numeric(which(apply(dataset, 1, FUN=function(x){sum(x, na.rm=TRUE)})>0))
-		keep.cols<-as.numeric(which(apply(dataset, 2, FUN=function(x){sum(x, na.rm=TRUE)})>0))	
-		keep.units<-sort(unique(c(keep.rows, keep.cols)))
-		dataset<-dataset[keep.units, keep.units]
-		if(class(input)=="dist"){dataset<-as.dist(dataset)}
-	}else{dataset<-input}
-
-	# check whether the input matrix is symmetric or asymmetric
-	dist1<-as.vector(as.matrix(dataset))
-	dist2<-as.vector(t(as.matrix(dataset)))
-	asymmetry.vector<-apply(cbind(dist1, dist2), 1, FUN=function(x){
-		na.test<-as.character(length(which(is.na(x))))
-		switch(na.test,
-			"0"={return(x[1]==x[2])},
-			"1"={return(FALSE)},
-			"2"={return(TRUE)})})	
-	asymmetry.test<-any(asymmetry.vector==FALSE)
-	
-	# correct case where symmetric matrices are not passed as class dist 
-	# (usually when provided as data.frames)
-	if(class(dataset)=="matrix" & asymmetry.test==FALSE){dataset<-as.dist(dataset)}
+	if(reduce){
+		keep.rows<-apply(wide, 1, function(x){length(which(is.na(x)))!=length(x)})
+		keep.cols<-apply(wide, 2, function(x){length(which(is.na(x)))!=length(x)})
+		# both are needed for asymmetric matrices
+		keep.both<-apply(cbind(keep.rows, keep.cols), 1, function(x){any(x==TRUE)})
+		keep.units<-as.numeric(which(keep.both))
+		wide<-wide[keep.units, keep.units]
+		distance<-as.dist(as.matrix(distance)[keep.units, keep.units])
+		# ensure long format matches
+		keep.text<-colnames(wide)[keep.units]
+		keep.test<-lapply(long[, 1:2], function(x, comp){
+			sapply(x, function(y, text){any(text==y)}, text=comp)}, comp=keep.text)
+		keep.vector<-apply(as.data.frame(keep.test), 1, function(x){all(x)})
+		long<-long[which(keep.vector), ]	
+		}
 
 	# export these as a list-based S3 object that can be passed to later functions
 	matrix.properties<-list(
-		initial.class=class(input), 
 		binary=binary.test,
-		asymmetric= asymmetry.test,
-		dist=dataset, #distance.matrix,
-		source=input
+		asymmetric= asymmetric,
+		wide=wide, # point generation/manipulation requires matrices
+		long=long, 	# line attr requires a data.frame
+		distance=distance	# clustering requires a distance matrix
 		)
 
 	return(matrix.properties)
@@ -94,14 +96,12 @@ append.missed.columns<-function(
 
 	if(class(default)=="data.frame"){
 		if(length(add.cols)>0){
-			input<-as.data.frame(cbind(input, default[, add.cols]), stringsAsFactors=FALSE)
-			new.cols<-c((ncol(input)-length(add.cols)+1):ncol(input))
-			colnames(input)[new.cols]<-add.names
+			input<-merge(input, default[, c(1, add.cols)], by="labels", all.x=FALSE, all.y=TRUE)
 			}
 		# ensure 'labels' column is placed first
-		cols<-c(1:dim(input)[2])
-		label.col<-which(colnames(input)=="labels")
-		input<-input[, c(label.col, cols[-label.col])]
+		# cols<-c(1:dim(input)[2])
+		# label.col<-which(colnames(input)=="labels")
+		# input<-input[, c(label.col, cols[-label.col])]
 		}
 	if(class(default)=="list"){
 		if(length(add.cols)>0){
@@ -118,8 +118,7 @@ append.missed.columns<-function(
 # function to set plot defaults, and overwrite if new data is provided
 set.plot.attributes<-function(
 	input,	# result from check.inputs
-	plot.control,
-	cluster
+	plot.control
 	)
 	{
 	# FUNCTIONS ON PLOT CONTROL
@@ -127,19 +126,14 @@ set.plot.attributes<-function(
 	control.names<-c("plot.rotation", "par", "plot",
 		"points", 
 		"point.labels", 
-		"line.breaks", "line.cols", "line.widths", # can these be relaced by a simple command, as in point.attr?
-			# run test to see whether 'lines' is specified as a data.frame
-			# if TRUE, then run line.attr() with appropriate defaults
-			# if FALSE & line.cols etc. are specified, pass to line.attr()
-		# i.e. you need your code to be consistent with earlier versions.
-		# BUT with the aim that except for some circleplot-specific stuff (below), most values are simply passed to do.call
+		"line.breaks", "line.cols", "line.widths", 
 		"line.gradient", "line.expansion", "line.curvature", 
 		"arrows",
 		"na.control")
 	plot.defaults<-vector("list", length=length(control.names))
 	names(plot.defaults)<-control.names
 	# turn off clustering for numeric matrices
-	if(input$binary==FALSE)cluster<-FALSE
+	# if(input$binary==FALSE)cluster<-FALSE
 
 	# overwrite these values where others are provided
 	if(missing(plot.control)==FALSE){
@@ -157,7 +151,7 @@ set.plot.attributes<-function(
 
 
 	## FILL IN MISSING DATA WITH DEFAULTS ## 
-	# 1. plot.rotation - has to be first for point.labels
+	# 1. plot.rotation
 	if(is.null(plot.defaults$plot.rotation)){plot.defaults$plot.rotation<-0}
 
 	# 2. par
@@ -165,13 +159,8 @@ set.plot.attributes<-function(
 	if(is.null(plot.defaults$par)){plot.defaults$par<-par.default}
 
 	# 3. points
-	distance.matrix<-input$dist
-	if(is.matrix(input$dist)){
-		n.points<-ncol(distance.matrix)
-		label.vals<-colnames(distance.matrix)
-	}else{ # i.e. dist
-		n.points<-attr(distance.matrix, "Size")
-		label.vals<-attr(distance.matrix, "Labels")}
+	n.points<-ncol(input$wide)
+	label.vals<-colnames(input$wide)
 	point.defaults<-data.frame(
 			labels= label.vals,
 			pch=19,
@@ -200,18 +189,13 @@ set.plot.attributes<-function(
 		label.distance<-mean(plot.defaults$point.labels$offset, na.rm=TRUE)+1
 	}else{label.distance<-1.05}
 	# create an object to allow proper positioning of labels
-	edge.coords<-make.circle(n= n.points, alpha=plot.defaults$plot.rotation, k= label.distance)
 	point.labels<-data.frame(
 		labels= label.vals,
-		x=edge.coords$x,
-		y=edge.coords$y,
 		cex=0.7,
-		srt=edge.coords$theta*(180/pi),
 		adj=0,
 		col="black",
 		stringsAsFactors=FALSE)
-	point.labels$srt[which(point.labels$x<0)]<-point.labels$srt[which(point.labels$x<0)]+180
-	point.labels$adj[which(point.labels$x<0)]<-1
+
 	# if necessary, append to - or overwrite - supplied values
 	if(class(plot.defaults$point.labels)=="data.frame"){	
 		plot.defaults$point.labels<-append.missed.columns(plot.defaults$point.labels, point.labels)
@@ -234,9 +218,7 @@ set.plot.attributes<-function(
 		if(length(plot.control$arrows)!=3){
 		plot.defaults$arrows<-append.missed.columns(plot.control$arrows, arrow.defaults)}}
 
-	# sort out line attributes
-	# be careful to ensure that the user can supply any combination of values and they will be used sensibly
-	# issue before was that is breaks were supplied, cols/widths did not take that into account
+	# set line attributes
 	line.attr<-lapply(plot.defaults, function(x){is.null(x)==FALSE})[6:8]
 	if(any(line.attr==TRUE)){
 		if(line.attr$line.breaks){n.lines<-length(plot.defaults$line.breaks)-1}
@@ -256,22 +238,22 @@ set.plot.attributes<-function(
 	if(input$binary){
 			cut.vals<-c(-1, 2)	; line.cols<-"grey30"
 	}else{	# for numeric matrices
-		overlap.zero<-min(distance.matrix, na.rm=TRUE)<0 & max(distance.matrix, na.rm=TRUE)>0
+		overlap.zero<-min(input$long[, 3], na.rm=TRUE)<0 & max(input$long[, 3], na.rm=TRUE)>0
 		if(overlap.zero){	# diverging colour palette
-			max.val<-max(sqrt(distance.matrix^2), na.rm=TRUE)+0.001
+			max.val<-max(sqrt(input$long[, 3]^2), na.rm=TRUE)+0.001
 			cut.vals<-seq(-max.val, max.val, length.out=n.lines+1)
 			line.cols<-brewer.pal.safe(n.lines, "RdBu", type="diverging")[c(n.lines:1)]
 		}else{	# sequential colour palette
-			if(any((distance.matrix^2)==Inf, na.rm=TRUE)){
+			if(any((input$long[, 3]^2)==Inf, na.rm=TRUE)){
 				cut.vals<-seq(
-					min(distance.matrix[which(distance.matrix!=-Inf)], na.rm=TRUE)-0.001,
-					max(distance.matrix[which(distance.matrix!=Inf)]+0.001, na.rm=TRUE), 
+					min(input$long[which(input$long[, 3]!=-Inf), 3], na.rm=TRUE)-0.001,
+					max(input$long[which(input$long[, 3]!=Inf), 3]+0.001, na.rm=TRUE), 
 					length.out=n.lines+1)
-				if(any(distance.matrix==Inf, na.rm=TRUE)){cut.vals[length(cut.vals)]<-Inf}
-				if(any(distance.matrix==-Inf, na.rm=TRUE)){cut.vals[1]<-(-Inf)}				
+				if(any(input$long[, 3]==Inf, na.rm=TRUE)){cut.vals[length(cut.vals)]<-Inf}
+				if(any(input$long[, 3]==-Inf, na.rm=TRUE)){cut.vals[1]<-(-Inf)}				
 			}else{
-				cut.vals<-seq(min(distance.matrix, na.rm=TRUE)-0.001, 
-				max(distance.matrix, na.rm=TRUE)+0.001, length.out=n.lines+1)}
+				cut.vals<-seq(min(input$long[, 3], na.rm=TRUE)-0.001, 
+				max(input$long[, 3], na.rm=TRUE)+0.001, length.out=n.lines+1)}
 			line.cols<-brewer.pal.safe(n.lines, "Purples", type="increasing")}
 	}	# end colour selection	
 
@@ -290,7 +272,7 @@ set.plot.attributes<-function(
 
 	## ERROR AVOIDANCE ##
 	# ensure line.breaks incapsulate all values of input
-	range.input<-range(input$dist, na.rm=TRUE)
+	range.input<-range(input$wide, na.rm=TRUE)
 	range.breaks<-range(plot.defaults$line.breaks)
 	if(range.breaks[1]>range.input[1] | range.breaks[2]<range.input[2]){
 		stop(paste(
@@ -333,83 +315,56 @@ set.plot.attributes<-function(
 	# ensure that labels are characters, not factors
 	plot.defaults$points$labels<-as.character(plot.defaults$points$labels)
 
-
-	# FUNCTIONS ON INPUT: SET POINT AND LINE ATTRIBUTES
-	# this behaviour partially depends on whether labels should be added
-	label.suppress.test<-is.logical(plot.defaults$point.labels) & length(plot.defaults$point.labels)==1
-	# make points for plotting
-	circle.points<-as.data.frame(
-		make.circle(n.points, alpha=plot.defaults$plot.rotation)[, 2:3])
-	# reorder (or not)
-	if(cluster){
-		if(input$binary){
-			if(input$asymmetric){dist.data<-2-(as.dist(input$dist) + as.dist(t(input$dist)))
-			}else{dist.data<-as.dist(1-input$dist)}
-		}else{dist.data<-as.dist(1-(sqrt(input$dist^2)))}
-		cluster.result<-hclust(dist.data)
-		circle.points$labels<-label.vals[cluster.result$order]
-		if(label.suppress.test==FALSE){plot.defaults$point.labels$labels<-label.vals[cluster.result$order]}
-	}else{circle.points$labels<-label.vals}
-	# add supp. info
-	circle.points$labels<-as.character(circle.points$labels)
-	circle.points<-circle.points[order(circle.points$labels), ]
-	circle.points<-merge(circle.points, plot.defaults$points, by="labels")
-	rownames(circle.points)<-circle.points$labels
-
-	# then line values
-	# begin by collapsing asymmetric matrices into two lower-triangular matrices; one for max value, the other for direction
-	# the raw values are retained for symmetric matrices
-	direction.matrix<-as.dist(input$dist)
-	direction.matrix[1:length(direction.matrix)]<-3 # three is the category given below for no arrows drawn
-
-	# make a simple 'direction' matrix
-	if(input$asymmetric){
-		# calculate a single value, that is the max (absolute) value of both inputs
-		comparison.dframe<-cbind(as.vector(as.dist(input$source)), as.vector(as.dist(t(input$source))))
-		sign.dframe<-sign(comparison.dframe)
-		if(any(sign.dframe==0, na.rm=TRUE)){sign.dframe[which(sign.dframe==0)]<-1}
-		positive.dframe<-sqrt(comparison.dframe^2)
-		value.initial<-apply(positive.dframe, 1, FUN=function(x){
-			if(any(is.na(x)==FALSE)==FALSE){return(NA)}else{return(max(x, na.rm=TRUE))}})
-		if(input$binary){
-			value.final<-value.initial
-			first.value<-comparison.dframe[, 1]==1
-			same.value<-apply(comparison.dframe, 1, sum)==2
-		}else{ # i.e. for numeric matrices
-			sign.lookup<-apply(positive.dframe, 1, FUN=function(x){
-				if(any(is.na(x)==FALSE)==FALSE){return(NA)
-				}else{return(which(x==max(x, na.rm=TRUE))[1])}})
-			sign.value<-apply(cbind(sign.dframe, sign.lookup), 1, FUN=function(x){
-				if(is.na(x[3])){return(NA)}else{return(x[x[3]])}})
-			value.final<-value.initial*sign.value
-			# calculate direction, using categories given by plot.defaults$line.breaks
-			# to specify whether an arrow should be drawn.
-			cut.matrix<-matrix(data=cut(comparison.dframe, 
-				breaks=plot.defaults$line.breaks, include.lowest=TRUE, labels=FALSE),
-				nrow=nrow(comparison.dframe), ncol=2)
-			same.value<-apply(cut.matrix, 1, FUN=function(x){
-				if(any(is.na(x))){
-					test<-which(is.na(x))
-					if(length(test)==1){return(FALSE)}else{return(TRUE)}
-				}else{return(x[1]==x[2])}})
-			first.value<-sign.lookup==1
-			if(any(is.na(first.value))){first.value[which(is.na(first.value))]<-TRUE}
-		}
-		# export line values
-		input$dist<-as.dist(input$dist)
-		input$dist[1:length(input$dist)]<-value.final
-		# export directions
-		direction.categories<-unlist(apply(cbind(first.value, same.value), 1, FUN=function(x){
-			if(x[2]){return(3)}else{
-				if(x[1]){return(1)}else{return(2)}}
-			}))
-		direction.matrix[1:length(direction.matrix)]<-direction.categories
+	return(plot.defaults)
 	}
 
-	# now work out line attr
-	line.list<-make.long.format(as.matrix(input$dist))
-	line.list$direction<-as.numeric(direction.matrix) 
-	if(input$binary){
+
+# function to take results from set.plot.attributes, and use them to create data.frames full of relevant information for plotting
+calc.circleplot<-function(x, plot.options, cluster){
+
+	# POINTS & LABELS
+	n.points<-nrow(plot.options$points)
+	circle.points<-as.data.frame(make.circle(n.points, alpha= plot.options$plot.rotation)[, 2:3])
+
+	if(any(colnames(plot.options$point.labels)=="offset")==TRUE){
+		label.distance<-mean(plot.options$point.labels$offset, na.rm=TRUE)+1
+	}else{label.distance<-1.05}
+	circle.labels<-as.data.frame(make.circle(n= n.points, alpha= plot.options$plot.rotation, k= label.distance)[, c(2, 3, 1)])
+	circle.labels$srt<-circle.labels$theta*(180/pi)
+
+	# clustering
+	if(cluster){
+		cluster.result<-as.data.frame(hclust(x$distance)[3:4])
+		new.order<-order(cluster.result$order)
+	}else{new.order<-c(1:nrow(circle.points))}
+
+	point.dframe<-cbind(circle.points, plot.options$points[new.order, ])
+	label.dframe <-circle.labels[, c(1, 2, 4)]
+	label.dframe$labels<-point.dframe$labels
+
+	point.list<-list(point.dframe, label.dframe)
+	names(point.list)<-c("points", "labels")
+
+	# reorder if 'order' column supplied by user
+	point.list.final<-lapply(point.list, function(y){
+		if(any(grepl("order", colnames(y)))){
+			order.cols<-which(grepl("order", colnames(y)))
+			if(length(order.cols)>1){
+				row.order<-do.call(order, as.list(y[, order.cols]))
+			}else{
+				row.order<-order(y[, order.cols])}
+			result<-y[row.order, -order.cols]
+			return(result)
+			}else{return(y)}})
+
+	point.list.final$labels$srt[which(point.list.final$labels$x<0)]<-point.list.final$labels$srt[which(point.list.final$labels$x<0)]+180
+	point.list.final$labels$adj<-0
+	point.list.final$labels$adj[which(point.list.final$labels$x<0)]<-1
+
+	# LINES
+	line.list<-x$long
+	# work out number and order of lines to be retained/plotted
+	if(x$binary){
 		# remove 'absent' connections
 		line.list<-line.list[which(line.list$value==1), ]
 		if(nrow(line.list)==0){stop("No connections are available to draw - binary input must contain some present values")}
@@ -423,41 +378,70 @@ set.plot.attributes<-function(
 			which(is.na(line.list$value)==TRUE), 
 			which(is.na(line.list$value)==FALSE)), ]}
 
-	# ALLOW USER SPECIFICATION OF X, Y LIMITS
-	# determine margins
-	x.lim<-c(min(circle.points$x), max(circle.points$x))
+	# set line colours & widths. 
+	line.cuts<-cut(line.list$value, plot.options$line.breaks, 
+		include.lowest=TRUE, right=TRUE, labels=FALSE)
+	line.defaults<-data.frame(
+		col= plot.options$line.cols[line.cuts],
+		lwd= plot.options$line.widths[line.cuts],
+		lty=1,
+		arrows=TRUE,
+		stringsAsFactors=FALSE)
+
+	# whether or not arrows should be added
+	if(class(plot.options$na.control)=="list"){	
+		if(any(is.na(line.list$value))){
+			line.defaults$col[which(is.na(line.list$value))]<-plot.options$na.control$col
+			line.defaults$lwd[which(is.na(line.list$value))]<-plot.options$na.control$lwd
+			line.defaults$lty[which(is.na(line.list$value))]<-plot.options$na.control$lty
+			line.defaults$arrows[which(is.na(line.list$value))]<-FALSE}
+	}else{
+		if(any(is.na(line.list$value))){
+			keep.rows<-which(is.na(line.list$value)==FALSE)
+			line.list<-line.list[keep.rows, ]
+			line.defaults<-line.defaults[keep.rows, ]}
+	}
+
+	# add infomation from line.defaults to line.list
+	keep.cols<-sapply(colnames(line.defaults), FUN=function(x){any(colnames(line.list)==x)})
+	add.cols<-which(keep.cols==FALSE)
+	add.names<-names(add.cols)
+	line.list<-cbind(line.list, line.defaults[, add.cols])
+	new.entries<-c((ncol(line.list)-length(add.cols)+1):ncol(line.list))
+	colnames(line.list)[new.entries]<-add.names
+
+
+	# PLOT
+	x.lim<-c(min(point.dframe$x), max(point.dframe$x))
 	# extra x margins added
 	# note this works beacuse set.plot.attributes allows FALSE as the only logical operator to point.labels
+	label.suppress.test<-is.logical(plot.options$point.labels) & length(plot.options$point.labels)==1
 	if(label.suppress.test==FALSE){
-		max.label<-max(nchar(circle.points$labels))
+		max.label<-max(nchar(point.dframe$labels))
 		x.expansion<-max.label*0.03
 		x.lim<-colSums(rbind(x.lim, c(-x.expansion, x.expansion)))
 	}else{x.lim<-c(-1, 1)}
-
 	# set plot attributes
-	plot.list<-list(x=circle.points$x, y=circle.points$y, 
+	plot.list<-list(x= point.dframe$x, y= point.dframe$y, 
 		xlim=x.lim, ylim=x.lim, type="n", ann=FALSE, axes=FALSE, asp=1)
-	if(is.null(plot.defaults$plot)){
-		plot.defaults$plot<-plot.list
-	}else{
-		user.data<-plot.defaults$plot
+	if(is.null(plot.options$plot)==FALSE){
+		user.data<-plot.options$plot
 		attr.list<-names(user.data)
 		available.attr<-names(plot.list)
 		keep.cols<-sapply(available.attr, FUN=function(x){any(attr.list==x)})
 		add.cols<-which(keep.cols==FALSE)
-		if(length(add.cols)>0){plot.defaults$plot<-append(user.data, plot.list[as.numeric(add.cols)])
-		}else{plot.defaults$plot<-user.data}
-	}
+		if(length(add.cols)>0){plot.list<-append(user.data, plot.list[as.numeric(add.cols)])
+		}}
 
 	# return all outputs
-	result<-list(
-		binary= input$binary,
-		asymmetric=input$asymmetric,
-		points=circle.points, 
-		lines=line.list, 
-		plot.control=plot.defaults)
-	return(result)
+	result.list<-append(list(par=plot.options$par, plot=plot.list), point.list.final)
+	result.list<-append(result.list, list(lines=line.list))
+	attr(result.list, "binary")<-x$binary
+	attr(result.list, "asymmetric")<-x$asymmetric
+	return(result.list)
 	}
+
+
 
 
 # function to add get a data.frame in the correct format to draw a key from a circleplot object

@@ -6,72 +6,81 @@ draw.curves<-function(x){
 	if(segment.test){
 		segment.list<-append(
 			list(x0= x$x[1:100], x1= x$x[2:101], y0= x$y[1:100], y1= x$y[2:101]),
-			x[-c(1:2, 5)])
+			x[-c(1:2)])
+		segment.list<-segment.list[-which(names(segment.list)=="arrows")]
 		do.call("segments", segment.list)
-	}else{do.call("lines", x[1:4])}
+	}else{
+		plot.info<-x[-length(x)] # last entry=direction
+		do.call("lines", plot.info)}
 	}
 
 
 # generate a list in which each entry is a list of line attributes, to pass to draw.curves()
 get.curves<-function(
-	input
+	input, # result from set.plot.attributes
+	plot.options
+	# initial # data supplied to circleplot
 	)
 	{
 
 	# calculate inter-point distances, to allow setting of pc.scale (to calculate curvature of lines relative to origin)
-	point.distance<-dist(input$points[, 2:3])
+	point.distance<-dist(input$points[, c("x", "y")])
 	scale.distance<-point.distance-min(point.distance)
 	scale.distance<-((scale.distance/max(scale.distance))*
-		input$plot.control$line.curvature[2])+input$plot.control$line.curvature[1]
+		plot.options$line.curvature[2])+ plot.options$line.curvature[1]
 	scale.distance<-as.matrix(scale.distance)
 
-	# set line colours & widths. 
-	# Note that this works even for binary matrices, but is later ignored if line.gradient==FALSE
-	line.cuts<-cut(input$lines$value, input$plot.control$line.breaks, 
-		include.lowest=TRUE, right=TRUE, labels=FALSE)
-	input$lines$colour<-input$plot.control$line.cols[line.cuts]
+	# # set line colours & widths. 
+	# # Note that this works even for binary matrices, but is later ignored if line.gradient==FALSE
+	# line.cuts<-cut(input$lines$value, input$plot.control$line.breaks, 
+		# include.lowest=TRUE, right=TRUE, labels=FALSE)
+	# input$lines$colour<-input$plot.control$line.cols[line.cuts]
 
-	# new code for setting line widths
-	input$lines$lwd.max<-input$plot.control$line.widths[line.cuts]	
-	input$lines$lwd.min<-input$plot.control$line.widths[line.cuts]*input$plot.control$line.expansion
+	# # new code for setting line widths
+	# input$lines$lwd.max<-input$plot.control$line.widths[line.cuts]	
+	# input$lines$lwd.min<-input$plot.control$line.widths[line.cuts]*input$plot.control$line.expansion
 	
-	# add line to remove NA values if plot.control$na.control is not a list
-	# this reduces the time taken to draw plots with many NA values
-	if(class(input$plot.control$na.control)!="list"){
-		if(any(is.na(input$lines$value))){
-			input$lines<-input$lines[-which(is.na(input$lines$value)==TRUE), ]}}
+	# # add line to remove NA values if plot.control$na.control is not a list
+	# # this reduces the time taken to draw plots with many NA values
+	# if(class(input$plot.control$na.control)!="list"){
+		# if(any(is.na(input$lines$value))){
+			# input$lines<-input$lines[-which(is.na(input$lines$value)==TRUE), ]}}
 
 	# loop to calculate lines of requisite location and colour
-	# line.list<-apply(input$lines, 1, FUN=function(x, input, distance){calc.lines(x, input, distance)},
-	#	input=input, distance=scale.distance)
+	line.list<-split(input$lines, c(1:nrow(input$lines)))
+	line.list<-lapply(line.list, function(x, input, distance, plot.options){
+		calc.lines(x, input, distance, plot.options)},
+		input=input, distance=scale.distance, plot.options= plot.options)
 	# for some reason, apply() fails here, while a loop works; implement a loop until this is resolved.
-	line.list <-list()
-	for(i in 1:nrow(input$lines)){line.list[[i]]<-calc.lines(input$lines[i, ], input, distance=scale.distance)}
+	# line.list <-list()
+	# for(i in 1:nrow(input$lines)){line.list[[i]]<-calc.lines(input$lines[i, ], input, distance=scale.distance)}
+
+	names(line.list)<-apply(input$lines[, 1:2], 1, function(x){paste(x, collapse="_")})
 
 	return(line.list)
 	}
 
 
 # function to pass to apply in get.curves() to calculate locations for each line
-calc.lines<-function(lines, input, distance)
+calc.lines<-function(x, input, distance, plot.options)
 	{
 	# sort out line inputs
-	sp1<-as.character(lines[1])
-	sp2<-as.character(lines[2])
-	value<-as.numeric(lines[3])
-	col<-as.character(lines[5])
-	lwd.min<-as.numeric(lines[7])
-	lwd.max<-as.numeric(lines[6])
+	# sp1<-as.character(lines[1])
+	# sp2<-as.character(lines[2])
+	# value<-as.numeric(lines[3])
+	# col<-as.character(lines[5])
+	# lwd.min<-as.numeric(lines[7])
+	# lwd.max<-as.numeric(lines[6])
 
 	# sort out other inputs
 	points<-input$points
-	plot.control<-input$plot.control
-	binary<-input$binary
-	asymmetric<-input$asymmetric
+	#plot.control<-input$plot.control
+	# binary<-input$binary
+	# asymmetric<-input$asymmetric
 
 	# sort out coords for this row
-	row1<-which(points$label== sp1)
-	row2<-which(points$label== sp2)
+	row1<-which(points$label== x$sp1)
+	row2<-which(points$label== x$sp2)
 	coords<-data.frame(x= points$x[c(row1, row2)], y= points$y[c(row1, row2)])
 	
 	# find basic spatial info on these points
@@ -90,24 +99,24 @@ calc.lines<-function(lines, input, distance)
  				y=seq(coords$y[1], coords$y[2], length.out=101))
 	} 
 
-	# set NA behaviour
-	if(is.na(value)){
-		if(is.list(plot.control$na.control)){
-			new.curve<-append(new.curve, plot.control$na.control) 
-			new.curve<-append(new.curve, list(direction=as.numeric(lines[4])))
-			}
-	}else{	# i.e. if this line is not a missing value (i.e. most cases).
+	# set NA behaviour - MUST BE SET EARLIER IN CALC.CIRCLEPLOT
+	# if(is.na(x$value)){
+		# if(is.list(plot.options$na.control)){
+			# new.curve<-append(new.curve, plot.control$na.control) 
+			# new.curve<-append(new.curve, list(direction=as.numeric(lines[4])))
+			# }
+	# }else{	# i.e. if this line is not a missing value (i.e. most cases).
 
 	# set line widths
-	lwd.range<-lwd.max-lwd.min
-	if(lwd.range>0){
-		# set default line widths (0-1 range) assuming expansion >0
-		x<-seq(-2, 2, length.out=100)
-		line.widths<-dnorm(x, mean=0, sd=0.5)
-		line.widths<-line.widths-min(line.widths)
-		line.widths<-line.widths/max(line.widths)
-		lwd.final<-(line.widths*lwd.range)+lwd.min
-	}else{lwd.final<-lwd.max}
+	# lwd.range<-lwd.max-lwd.min
+	# if(lwd.range>0){
+		# # set default line widths (0-1 range) assuming expansion >0
+		# x<-seq(-2, 2, length.out=100)
+		# line.widths<-dnorm(x, mean=0, sd=0.5)
+		# line.widths<-line.widths-min(line.widths)
+		# line.widths<-line.widths/max(line.widths)
+		# lwd.final<-(line.widths*lwd.range)+lwd.min
+	# }else{lwd.final<-lwd.max}
 
 	# ensure that curves run from their start to end point
 	large.x<-which(sqrt(coords$x^2)>10^-3)
@@ -118,12 +127,12 @@ calc.lines<-function(lines, input, distance)
 		new.curve$x<-new.curve$x[101:1]	
 		new.curve$y<-new.curve$y[101:1]}
 	# if direction states that the line be reversed, do so.
-	if(as.numeric(lines[4])==2){
-		new.curve$x<-new.curve$x[101:1]	
-		new.curve$y<-new.curve$y[101:1]}
+	# if(x$direction==2){
+		# new.curve$x<-new.curve$x[101:1]	
+		# new.curve$y<-new.curve$y[101:1]}
 
 	# set line colours
-	if(binary & plot.control$line.gradient){ # for the special case where line colours are set by point colours
+	if(plot.options$line.gradient){ # for the special case where line colours are set by point colours
 		# get line colours from input$points
 		color1<-points$col[row1]
 		color2<-points$col[row2]
@@ -133,15 +142,13 @@ calc.lines<-function(lines, input, distance)
 		# ensure colours are in correct order
 		distance.pos<-sqrt((new.curve$x[1]-points$x[row1])^2)
 		if(distance.pos>0.001){colours.final<-colours.final[100:1]}		
-	}else{colours.final<-col} # in all other cases
+	}else{colours.final<-x$col} # in all other cases
 
 	# export
-	new.curve<-append(new.curve, list(
-		col=as.character(colours.final), 
-		lwd=as.numeric(lwd.final),
-		direction=as.numeric(lines[4])))
+	new.curve<-append(new.curve, x[-c(1:3)])
+	if(plot.options$line.gradient){new.curve$col<-colours.final}
 
-	}	# end if(is.na())==F
+	#}	# end if(is.na())==F
 
 	return(new.curve)
 
@@ -152,11 +159,11 @@ calc.lines<-function(lines, input, distance)
 # function to determine what kind of arrowhead to draw (if any) and then draw result from get.arrows()
 # note: if(asymmetric) is already called; so we only need to know whether an arrow should be drawn, and in which direction
 draw.arrows<-function(x, attr){
-	invisible(switch(x$direction,
-		 1=={draw<-TRUE; reverse<-FALSE},
-		 2=={draw<-TRUE; reverse<-TRUE},
-		 3=={draw<-FALSE; reverse<-NA}))
-	if(draw){
+	# switch(x$direction,
+		 # 1=={draw<-TRUE; reverse<-FALSE},
+		 # # 2=={draw<-TRUE; reverse<-TRUE},
+		 # 3=={draw<-FALSE; reverse<-NA})
+	if(x$arrows){
 		if(length(x$col)>1){col.final<-x$col[ceiling(101*attr$distance)]
 		}else{col.final<-x$col}
 		polygon(get.arrows(x, attr, reverse), border=NA, col= col.final)}

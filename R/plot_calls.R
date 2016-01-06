@@ -64,27 +64,28 @@ run.circleplot.single<-function(
 	{
 	# initial processing
 	dataset<-check.inputs(input, reduce)
-	result<-set.plot.attributes(dataset, plot.control, cluster) # set plot attributes/defaults
-	curve.list<-get.curves(result)
+	plot.options<-set.plot.attributes(dataset, plot.control) # set plot attributes/defaults
+	circleplot.object<-calc.circleplot(dataset, plot.options, cluster) # get line and point attributes
+	curve.list<-get.curves(circleplot.object, plot.options)
 
 	# call plot code
 	if(add==FALSE){
-		do.call("par", result$plot.control$par)
-		do.call("plot", result$plot.control$plot)}
+		do.call("par", circleplot.object$par)
+		do.call("plot", circleplot.object$plot)}
 	invisible(lapply(curve.list, FUN=function(x, asymmetric, arrow.attr){
 		draw.curves(x)
 		if(asymmetric)draw.arrows(x, arrow.attr)},
-		asymmetric=result$asymmetric, arrow.attr=result$plot.control$arrows))
-	do.call("points", as.list(result$points[, -1]))
+		asymmetric=attr(circleplot.object, "asymmetric"), arrow.attr=plot.options$arrows))
+	do.call("points", as.list(circleplot.object$points[, -which(colnames(circleplot.object$points)=="labels")]))
 	
 	# label points
-	label.suppress.test<-is.logical(result$plot.control$point.labels) & length(result$plot.control$point.labels)==1
+	label.suppress.test<-is.logical(plot.options$labels) & length(plot.options$point.labels)==1
 	if(label.suppress.test==FALSE){
-		labels.list<-split(result$plot.control$point.labels, 1:nrow(result$plot.control$point.labels))
+		labels.list<-split(circleplot.object$labels, 1:nrow(circleplot.object$labels))
 		invisible(lapply(labels.list, FUN=function(x){do.call("text", x)}))}
 	
 	# return information as needed
-	return(invisible(result))
+	return(invisible(list(locations= dataset, plot.control=plot.options)))
 	}
 
 

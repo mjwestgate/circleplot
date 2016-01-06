@@ -3,8 +3,9 @@
 
 # function to make a square matrix from a data.frame
 make.wide.format<-function(
-	input	# result from spaa()
+	input	 # result from spaa()
 	){
+	if(class(input)!="data.frame"){stop("make.wide.format only works for class(input)=='data.frame'")}
 	# work out properties of the input
 	spp.names<-unique(c(input[, 1], input[, 2]))
 	n.spp<-length(spp.names)
@@ -33,6 +34,7 @@ make.wide.format<-function(
 
 # function to make a 3-column data.frame from a square matrix (i.e. inverse of make.wide.format)
 make.long.format<-function(input){
+	if(class(input)!="matrix"){stop("make.wide.format only works for class(input)=='matrix'")}
 	# get basic summaries
 	asymmetric<-any(c(input==t(input))==FALSE, na.rm=TRUE)
 	if(length(colnames(input))==0){spp.names<-paste("V", c(1:ncol(input)), sep="")
@@ -57,6 +59,45 @@ make.long.format<-function(input){
 	line.list<-line.list[order(line.list$sp1, line.list$sp2), ] # consistent order
 	return(line.list) # export
 	}
+
+
+# function to take an input (preferably in long format) and return a sensible distance matrix
+make.dist.format<-function(input){
+	if(class(input)=="matrix"){input<-make.long.format(input)}
+	# remove infinte values
+	if(any(input[, 3]==Inf, na.rm=TRUE)){
+		replace.locs<-which(input[, 3]==Inf)
+		replace.vals<-max(input[-replace.locs, 3], na.rm=TRUE)*2
+		input[replace.locs, 3]<-replace.vals}
+	if(any(input[, 3]==-Inf, na.rm=TRUE)){
+		replace.locs<-which(input[, 3]==-Inf)
+		replace.vals<-min(input[-replace.locs, 3], na.rm=TRUE)
+		if(replace.vals<0){replace.vals<-replace.vals*2}else{replace.vals<-replace.vals*0.5}
+		input[replace.locs, 3]<-replace.vals}
+	# make +ve definite
+	if(min(input[, 3], na.rm=TRUE)<0){
+		input[, 3]<-input[, 3]-min(input[, 3], na.rm=TRUE)}
+	# invert to make into a distance
+	input[, 3]<-max(input[, 3], na.rm=TRUE)-input[, 3]
+	# set na values to the mean (i.e. no effect on clustering)
+	if(any(is.na(input[, 3]))){
+		input[which(is.na(input[, 3])), 3]<-mean(input[, 3], na.rm=TRUE)}
+	# convert to matrix, check for asymmetry
+	wide.format<-make.wide.format(input)
+	asymmetry.test<-all(wide.format==t(wide.format), na.rm=TRUE)==FALSE
+	if(asymmetry.test){
+		wide.array<-array(data=NA, dim=c(dim(wide.format), 2))
+		wide.array[,,1]<-wide.format
+		wide.array[,,2]<-t(wide.format)
+		wide.array<-apply(wide.array, c(1, 2), sum)
+		colnames(wide.array)<-colnames(wide.format)
+		rownames(wide.array)<-rownames(wide.format)
+		result<-as.dist(wide.array)
+	}else{
+		result<-as.dist(wide.format)}
+	return(list(asymmetric=asymmetry.test, dist.matrix=result))
+	}
+
 
 
 # Functions on lists
