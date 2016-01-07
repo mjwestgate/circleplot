@@ -10,8 +10,8 @@ draw.curves<-function(x){
 		segment.list<-segment.list[-which(names(segment.list)=="arrows")]
 		do.call("segments", segment.list)
 	}else{
-		plot.info<-x[-length(x)] # last entry=direction
-		do.call("lines", plot.info)}
+		if(any(names(x)=="arrows")){x<-x[-which(names(x)=="arrows")]}
+		do.call("lines", x)}
 	}
 
 

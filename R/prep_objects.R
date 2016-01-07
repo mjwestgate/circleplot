@@ -338,28 +338,32 @@ calc.circleplot<-function(x, plot.options, cluster){
 		new.order<-order(cluster.result$order)
 	}else{new.order<-c(1:nrow(circle.points))}
 
-	point.dframe<-cbind(circle.points, plot.options$points[new.order, ])
-	label.dframe <-circle.labels[, c(1, 2, 4)]
-	label.dframe$labels<-point.dframe$labels
+	# get information on points and labels, but do not add x,y coordinates
+	point.dframe<-plot.options$points
+	point.dframe$order.auto<-new.order
+	label.dframe<-plot.options$point.labels
 
+	# reorder as necessary
+	if(any(grepl("order", colnames(point.dframe)))){
+		order.cols<-which(grepl("order", colnames(point.dframe)))
+		if(length(order.cols)>1){
+			row.order<-do.call(order, as.list(point.dframe[, order.cols]))
+		}else{
+			row.order<-order(point.dframe[, order.cols])}
+		point.dframe<-point.dframe[row.order, -order.cols]
+		label.dframe<-label.dframe[row.order, ]
+	}
+
+	# add coordinates
+	point.dframe<-cbind(circle.points, point.dframe)
+	label.dframe<-cbind(circle.labels[, c(1, 2, 4)], label.dframe)
 	point.list<-list(point.dframe, label.dframe)
 	names(point.list)<-c("points", "labels")
 
-	# reorder if 'order' column supplied by user
-	point.list.final<-lapply(point.list, function(y){
-		if(any(grepl("order", colnames(y)))){
-			order.cols<-which(grepl("order", colnames(y)))
-			if(length(order.cols)>1){
-				row.order<-do.call(order, as.list(y[, order.cols]))
-			}else{
-				row.order<-order(y[, order.cols])}
-			result<-y[row.order, -order.cols]
-			return(result)
-			}else{return(y)}})
-
-	point.list.final$labels$srt[which(point.list.final$labels$x<0)]<-point.list.final$labels$srt[which(point.list.final$labels$x<0)]+180
-	point.list.final$labels$adj<-0
-	point.list.final$labels$adj[which(point.list.final$labels$x<0)]<-1
+	# correct label presentation
+	point.list$labels$srt[which(point.list$labels$x<0)]<-point.list$labels$srt[which(point.list$labels$x<0)]+180
+	point.list$labels$adj<-0
+	point.list$labels$adj[which(point.list$labels$x<0)]<-1
 
 	# LINES
 	line.list<-x$long
@@ -434,7 +438,7 @@ calc.circleplot<-function(x, plot.options, cluster){
 		}}
 
 	# return all outputs
-	result.list<-append(list(par=plot.options$par, plot=plot.list), point.list.final)
+	result.list<-append(list(par=plot.options$par, plot=plot.list), point.list)
 	result.list<-append(result.list, list(lines=line.list))
 	attr(result.list, "binary")<-x$binary
 	attr(result.list, "asymmetric")<-x$asymmetric
