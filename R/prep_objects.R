@@ -367,6 +367,7 @@ calc.circleplot<-function(x, plot.options, cluster){
 
 	# LINES
 	line.list<-x$long
+	colnames(line.list)[3]<-"value"
 	# work out number and order of lines to be retained/plotted
 	if(x$binary){
 		# remove 'absent' connections
