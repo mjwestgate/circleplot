@@ -64,7 +64,7 @@ run.circleplot.single<-function(
 	{
 	# initial processing
 	dataset<-check.inputs(input, reduce)
-	plot.options<-set.plot.attributes(dataset, plot.control) # set plot attributes/defaults
+	plot.options<-set.plot.attributes(dataset, plot.control, reduce) # set plot attributes/defaults
 	circleplot.object<-calc.circleplot(dataset, plot.options, cluster) # get line and point attributes
 	curve.list<-get.curves(circleplot.object, plot.options)
 

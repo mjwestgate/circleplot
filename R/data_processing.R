@@ -79,9 +79,6 @@ make.dist.format<-function(input){
 		input[, 3]<-input[, 3]-min(input[, 3], na.rm=TRUE)}
 	# invert to make into a distance
 	input[, 3]<-max(input[, 3], na.rm=TRUE)-input[, 3]
-	# set na values to the mean (i.e. no effect on clustering)
-	if(any(is.na(input[, 3]))){
-		input[which(is.na(input[, 3])), 3]<-mean(input[, 3], na.rm=TRUE)}
 	# convert to matrix, check for asymmetry
 	wide.format<-make.wide.format(input)
 	asymmetry.test<-all(wide.format==t(wide.format), na.rm=TRUE)==FALSE
@@ -95,6 +92,9 @@ make.dist.format<-function(input){
 		result<-as.dist(wide.array)
 	}else{
 		result<-as.dist(wide.format)}
+	# set na values to the mean (i.e. no effect on clustering)
+	if(any(is.na(result))){
+		result[which(is.na(result))]<-mean(result, na.rm=TRUE)}
 	return(list(asymmetric=asymmetry.test, dist.matrix=result))
 	}
 

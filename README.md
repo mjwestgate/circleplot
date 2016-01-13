@@ -3,6 +3,8 @@ circleplot
 
 Tools for exploring distance and association matrices using circular plots. Also allows plotting of binary directional matrices.
 
+NOTE: THIS VERSION IS IN ACTIVE DEVELOPMENT AND MAY CONTAIN ERRORS: USE WITH CAUTION.
+
 # Example:
 ```
 # get circleplot

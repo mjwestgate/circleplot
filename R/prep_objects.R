@@ -81,7 +81,7 @@ check.inputs<-function(
 # function to compare supplied to default values, and return a combined data.frame with all columns
 append.missed.columns<-function(
 	input, 	# user-supplied values
-	default	# default settings
+	default 	# default settings
 	){
 	if(class(default)=="data.frame"){
 		specified.cols<-colnames(input)
@@ -118,7 +118,8 @@ append.missed.columns<-function(
 # function to set plot defaults, and overwrite if new data is provided
 set.plot.attributes<-function(
 	input,	# result from check.inputs
-	plot.control
+	plot.control,
+	reduce
 	)
 	{
 	# FUNCTIONS ON PLOT CONTROL
@@ -159,15 +160,20 @@ set.plot.attributes<-function(
 	if(is.null(plot.defaults$par)){plot.defaults$par<-par.default}
 
 	# 3. points
-	n.points<-ncol(input$wide)
-	label.vals<-colnames(input$wide)
+	if(is.null(plot.defaults$points) | reduce){
+		n.points<-ncol(input$wide)
+		label.vals<-colnames(input$wide)
+	}else{
+		n.points<-nrow(plot.defaults$points)
+		label.vals<-plot.defaults$points$labels}
+	# generate a 'null' data.frame
 	point.defaults<-data.frame(
 			labels= label.vals,
 			pch=19,
 			col=rep(rgb(t(col2rgb("grey30")), maxColorValue=255), n.points),
 			cex=1,
 			stringsAsFactors=FALSE)
-	rownames(point.defaults)<-point.defaults$labels
+	# rownames(point.defaults)<-point.defaults$labels 
 	# overwrite
 	if(is.null(plot.defaults$points)){
 		plot.defaults$points<-point.defaults
