@@ -16,15 +16,15 @@ run.circleplot.multiple<-function(
 	input,	# a distance matrix (class 'dist') or square matrix (class matrix)
 	plot.control, 
 	add=FALSE, # should this figure be added to an existing plot? 
-	type="OR",
+	compare.type="OR",
 	...
 	){
 	comparison<-calc.overlap(input)
-	dataset<-clean.list(input, type=type)
+	dataset<-clean.list(input, type= compare.type)
 	n<-length(dataset)
 	if(add==FALSE)par(mfrow=panel.dims(length(input)))
 
-	if(type=="OR"){
+	if(compare.type=="OR"){
 	for(i in 1:n){
 		missing.rows<-which(comparison[, i]==FALSE)
 		point.dframe<-data.frame(labels=rownames(comparison), col="grey30", pch=19, stringsAsFactors=FALSE)
@@ -43,7 +43,7 @@ run.circleplot.multiple<-function(
 			}
 		run.circleplot.single(dataset[[i]], plot.control=plot.control.thisrun, ...)
 		}
-	}else{ # type=AND
+	}else{ # compare.type =AND
 		invisible(lapply(dataset, FUN=function(x){run.circleplot.single(x, ...)}))
 		}	
 	if(add==FALSE)par(mfrow=c(1, 1))
@@ -59,30 +59,36 @@ run.circleplot.single<-function(
 	reduce=FALSE, # should nodes with no connections be removed?
 	add=FALSE, # should this figure be added to an existing plot? 
 	plot.control,	# a list containing plot attributes. See ?circleplot
+	style="classic", # "pie" is the alternative; "clock" might be a fun third option (that has both points and polygons); but somewhat nonsensical given that the points and polygons would be the same colour.
 	...
 	)
 	{
 	# initial processing
 	dataset<-check.inputs(input, reduce)
 	plot.options<-set.plot.attributes(dataset, plot.control, reduce) # set plot attributes/defaults
-	circleplot.object<-calc.circleplot(dataset, plot.options, cluster) # get line and point attributes
+	circleplot.object<-calc.circleplot(dataset, plot.options, cluster, style) # get line and point attributes
 	curve.list<-get.curves(circleplot.object, plot.options)
 
 	# call plot code
 	if(add==FALSE){
-		do.call("par", circleplot.object$par)
-		do.call("plot", circleplot.object$plot)}
+		do.call(par, circleplot.object$par)
+		do.call(plot, circleplot.object$plot)}
 	invisible(lapply(curve.list, FUN=function(x, asymmetric, arrow.attr){
 		draw.curves(x)
 		if(asymmetric)draw.arrows(x, arrow.attr)},
 		asymmetric=attr(circleplot.object, "asymmetric"), arrow.attr=plot.options$arrows))
-	do.call("points", as.list(circleplot.object$points[, -which(colnames(circleplot.object$points)=="labels")]))
-	
+
+	# add points or polygons, depending on style
+	if(style=="classic"){
+		do.call(points, as.list(circleplot.object$points[, -which(colnames(circleplot.object$points)=="labels")]))
+	}else{
+		invisible(lapply(circleplot.object$polygons, function(x){do.call(polygon, x)}))}
+
 	# label points
 	label.suppress.test<-is.logical(plot.options$labels) & length(plot.options$point.labels)==1
 	if(label.suppress.test==FALSE){
 		labels.list<-split(circleplot.object$labels, 1:nrow(circleplot.object$labels))
-		invisible(lapply(labels.list, FUN=function(x){do.call("text", x)}))}
+		invisible(lapply(labels.list, FUN=function(x){do.call(text, x)}))}
 	
 	# return information as needed
 	return(invisible(list(locations= dataset, plot.control=plot.options)))

@@ -11,11 +11,13 @@ circleplot(x, cluster, reduce, add, plot.control, type)
 
   \item{reduce}{logical - should points with no connections be removed from the plot? Defaults to FALSE}
 
-  \item{add}{logical (defaulting to FALSE), with behaviour dependent on class(x). When class(x)=="list", default is to divide the window automatically using par(mfrow), while setting add=TRUE allows you to specify your own mfrow values. When class(x)!="list", asks whether new points and lines be added to an existing circleplot.}
+  \item{style}{command to change the style of plot presentation. Defaults to 'classic'. Currently the only other option to date is 'pie', which replaces boundary points with a thick border. Still in early testing.}
+
+  \item{compare.type}{If x is a list, this argument determines which nodes are drawn on all plots. type="OR" (the default) draws all nodes present in any of the list enties; type="AND" draws only those nodes that are present in all entries.}
 
   \item{plot.control}{a list giving information on how the plot should appear. If given, may contain any or all of the named objects given in notes (below).}
 
-  \item{type}{If x is a list, this argument determines which nodes are drawn on all plots. type="OR" (the default) draws all nodes present in any of the list enties; type="AND" draws only those nodes that are present in all entries.}
+  \item{add}{logical (defaulting to FALSE), with behaviour dependent on class(x). When class(x)=="list", default is to divide the window automatically using par(mfrow), while setting add=TRUE allows you to specify your own mfrow values. When class(x)!="list", asks whether new points and lines be added to an existing circleplot.}
 
 }
 \value{

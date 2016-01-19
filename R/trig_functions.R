@@ -10,20 +10,13 @@ make.circle<-function(
 	base.alpha<-(-90-(180/n))
 	if(missing(alpha)){alpha<-base.alpha}else{alpha<-alpha+base.alpha}
 	# if(missing(alpha))alpha<-22.91	# as original default was 0.4 radians
-
-	# convert to radians
-	alpha<-alpha*(pi/180)
-
-	# create output dataframe
-	values<-as.data.frame(matrix(data=NA, nrow=n, ncol=3))
-		colnames(values)<-c("theta", "x", "y")
-	for(i in 1:n)	# run loop to calculate all points
-		{
-		values$theta[i]<-(2*(pi/n)*seq(0, (n-1))[i])-alpha
-		values$x[i]<-k*cos(values$theta[i])
-		values$y[i]<-k*sin(values$theta[i])
-		}
-
+	alpha<-alpha*(pi/180) # convert to radians
+	# get coordinates
+	theta<-(2*(pi/n)*seq(0, (n-1)))-alpha
+	values<-data.frame(
+		theta=theta,
+		x=k*cos(theta),
+		y=k*sin(theta))
 	# reorder such that circle is drawn clockwise from the top
 	values<-values[c(nrow(values):1), ]
 	rownames(values)<-c(1:nrow(values))
@@ -117,4 +110,22 @@ reposition.curve<-function(
 	curve.new$x<-curve.new$x+apex$coordinates$x[2]	# position to new x,y
 	curve.new$y<-curve.new$y+apex$coordinates$y[2]	
 	return(curve.new)
+	}
+
+
+# add polygon to edge of circle
+make.polygon<-function(x, points, options, res){ #=segment.dframe, point.dframe.total, plot.options){
+	min.selector<-cbind(points$x-x$x[1], points$y-x$y[1])
+	row.start<-which.min(apply(min.selector, 1, function(x){sum(x^2)})) - (res/2)
+	a<-nrow(x)
+	min.selector<-cbind(points$x-x$x[a], points$y-x$y[a])
+	row.end<-which.min(apply(min.selector, 1, function(x){sum(x^2)})) + (res/2)
+	# use this to make a polygon-type data.frame
+	rows<-c(row.start:row.end); inv.rows<-c(row.end:row.start)
+	poly.final<-list(
+		x= c(points$x[rows], points$x.max[inv.rows]),
+		y= c(points$y[rows], points$y.max[inv.rows]),
+		border=NA,
+		col=x$col[1])
+	return(poly.final)
 	}

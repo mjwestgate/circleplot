@@ -326,15 +326,19 @@ set.plot.attributes<-function(
 
 
 # function to take results from set.plot.attributes, and use them to create data.frames full of relevant information for plotting
-calc.circleplot<-function(x, plot.options, cluster){
+calc.circleplot<-function(x, plot.options, cluster, style){
 
 	# POINTS & LABELS
 	n.points<-nrow(plot.options$points)
 	circle.points<-as.data.frame(make.circle(n.points, alpha= plot.options$plot.rotation)[, 2:3])
 
+	# set distances for labels - note these must now be dependent on style
+	if(style=="pie"){edge.max<-1+(plot.options$points$cex*0.1)
+	}else{edge.max<-1}
+
 	if(any(colnames(plot.options$point.labels)=="offset")==TRUE){
-		label.distance<-mean(plot.options$point.labels$offset, na.rm=TRUE)+1
-	}else{label.distance<-1.05}
+		label.distance<- edge.max + mean(plot.options$point.labels$offset, na.rm=TRUE)
+	}else{label.distance<- edge.max  + 0.05}
 	circle.labels<-as.data.frame(make.circle(n= n.points, alpha= plot.options$plot.rotation, k= label.distance)[, c(2, 3, 1)])
 	circle.labels$srt<-circle.labels$theta*(180/pi)
 
@@ -370,6 +374,48 @@ calc.circleplot<-function(x, plot.options, cluster){
 	point.list$labels$srt[which(point.list$labels$x<0)]<-point.list$labels$srt[which(point.list$labels$x<0)]+180
 	point.list$labels$adj<-0
 	point.list$labels$adj[which(point.list$labels$x<0)]<-1
+
+
+	# POLYGONS
+	if(style=="pie"){
+		# use clustering to determine whether which sets of adjacent points have unique attributes
+		point.attributes<-point.list$points[, -c(1:3)]
+		# convert any character data to factors
+		class.list<-lapply(point.attributes, class)
+		if(any(class.list =="character")){
+			select<-which(class.list=="character")
+			for(i in 1:length(select)){point.attributes[, select[i]]<-as.factor(point.attributes[, select[i]])}}
+		# use this to calculate groups
+		point.distance<-daisy(point.attributes, "gower")
+		point.cluster<-hclust(point.distance)
+		polygon.attributes<-point.list$points
+		# attach to initial values
+		if(any(point.distance>0)){
+			initial.vals<-cutree(point.cluster, h=min(point.distance[which(point.distance>0)])*0.5)
+			initial.vals<-initial.vals - initial.vals[1] + 1 # set 1st value to 1
+			final.vals<-initial.vals
+			for(i in 2:length(initial.vals)){
+				if(initial.vals[i]==initial.vals[(i-1)]){final.vals[i]<-initial.vals[(i-1)]
+				}else{final.vals[i]<-initial.vals[(i-1)]+1}}
+			polygon.attributes$group<-final.vals
+		}else{
+			polygon.attributes$group<-1}
+		# at this point it might be worth removing irrelevant columns (i.e. that only work on points, not polygons)
+		# make a set of polygons for plotting
+		polygon.list.initial<-split(polygon.attributes, polygon.attributes$group)
+		n.points<-nrow(point.list$points)
+		m<-10 # must be an even number
+		circle.points.offset<-as.data.frame(make.circle(n.points*m, 
+			alpha=plot.options$plot.rotation+(180/(n.points*m)))[, 2:3])
+		circle.points.max<-as.data.frame(make.circle(n.points*m, 
+			alpha=plot.options$plot.rotation+(180/(n.points*m)), k= edge.max)[, 2:3])
+		colnames(circle.points.max)<-c("x.max", "y.max")
+		circle.points.offset<-cbind(circle.points.offset, circle.points.max)
+		circle.points.offset<-rbind(circle.points.offset[nrow(circle.points.offset), ], circle.points.offset)#, circle.points.offset[1, ])
+		point.list$polygons<-lapply(polygon.list.initial, function(x, points, options, res){
+			make.polygon(x, points, options, res)},
+			points= circle.points.offset, options = plot.options, res=m)
+		} # end pie style
 
 	# LINES
 	line.list<-x$long
@@ -429,7 +475,7 @@ calc.circleplot<-function(x, plot.options, cluster){
 	label.suppress.test<-is.logical(plot.options$point.labels) & length(plot.options$point.labels)==1
 	if(label.suppress.test==FALSE){
 		max.label<-max(nchar(point.dframe$labels))
-		x.expansion<-max.label*0.03
+		x.expansion<-((label.distance[1]-1)*0.5) + (max.label*0.03)
 		x.lim<-colSums(rbind(x.lim, c(-x.expansion, x.expansion)))
 	}else{x.lim<-c(-1, 1)}
 	# set plot attributes
