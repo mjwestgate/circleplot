@@ -328,15 +328,15 @@ set.plot.attributes<-function(
 # function to take results from set.plot.attributes, and use them to create data.frames full of relevant information for plotting
 calc.circleplot<-function(x, plot.options, cluster, style){
 
-	# POINTS & LABELS
+	# POINTS
 	n.points<-nrow(plot.options$points)
 	circle.points<-as.data.frame(make.circle(n.points, alpha= plot.options$plot.rotation)[, 2:3])
 
 	# set distances for labels - note these must now be dependent on style
-	if(style=="pie"){edge.max<-1+(plot.options$points$cex*0.1)
+	if(style=="pie"){edge.max<-1+(plot.options$points$cex[1]*0.1)
 	}else{edge.max<-1}
 
-	if(any(colnames(plot.options$point.labels)=="offset")==TRUE){
+	if(any(colnames(plot.options$point.labels)=="offset")){
 		label.distance<- edge.max + mean(plot.options$point.labels$offset, na.rm=TRUE)
 	}else{label.distance<- edge.max  + 0.05}
 	circle.labels<-as.data.frame(make.circle(n= n.points, alpha= plot.options$plot.rotation, k= label.distance)[, c(2, 3, 1)])
@@ -360,20 +360,29 @@ calc.circleplot<-function(x, plot.options, cluster, style){
 			row.order<-do.call(order, as.list(point.dframe[, order.cols]))
 		}else{
 			row.order<-order(point.dframe[, order.cols])}
-		point.dframe<-point.dframe[row.order, -order.cols]
-		label.dframe<-label.dframe[row.order, ]
-	}
+		  	point.dframe<-point.dframe[row.order, -order.cols]
+		# label.dframe<-label.dframe[row.order, ]
+	}else{row.order<-c(1:nrow(point.dframe))}
 
 	# add coordinates
 	point.dframe<-cbind(circle.points, point.dframe)
-	label.dframe<-cbind(circle.labels[, c(1, 2, 4)], label.dframe)
+
+	# add labels if needed
+	label.suppress.test<-is.logical(plot.options$point.labels) & length(plot.options$point.labels)==1
+	if(label.suppress.test){
+		label.dframe<-plot.options$point.labels
+	}else{
+		label.dframe<-label.dframe[row.order, ]
+		label.dframe<-cbind(circle.labels[, c(1, 2, 4)], label.dframe)
+		# correct label presentation
+		label.dframe$srt[which(label.dframe$x<0)]<-label.dframe$srt[which(label.dframe$x<0)]+180
+		label.dframe$adj<-0
+		label.dframe$adj[which(label.dframe$x<0)]<-1
+	}
+
+	# export as a list
 	point.list<-list(point.dframe, label.dframe)
 	names(point.list)<-c("points", "labels")
-
-	# correct label presentation
-	point.list$labels$srt[which(point.list$labels$x<0)]<-point.list$labels$srt[which(point.list$labels$x<0)]+180
-	point.list$labels$adj<-0
-	point.list$labels$adj[which(point.list$labels$x<0)]<-1
 
 
 	# POLYGONS
@@ -477,7 +486,7 @@ calc.circleplot<-function(x, plot.options, cluster, style){
 		max.label<-max(nchar(point.dframe$labels))
 		x.expansion<-((label.distance[1]-1)*0.5) + (max.label*0.03)
 		x.lim<-colSums(rbind(x.lim, c(-x.expansion, x.expansion)))
-	}else{x.lim<-c(-1, 1)}
+	}else{x.lim<-c(-edge.max, edge.max)}
 	# set plot attributes
 	plot.list<-list(x= point.dframe$x, y= point.dframe$y, 
 		xlim=x.lim, ylim=x.lim, type="n", ann=FALSE, axes=FALSE, asp=1)

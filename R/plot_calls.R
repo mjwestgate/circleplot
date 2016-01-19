@@ -85,7 +85,7 @@ run.circleplot.single<-function(
 		invisible(lapply(circleplot.object$polygons, function(x){do.call(polygon, x)}))}
 
 	# label points
-	label.suppress.test<-is.logical(plot.options$labels) & length(plot.options$point.labels)==1
+	label.suppress.test<-is.logical(plot.options$point.labels) & length(plot.options$point.labels)==1
 	if(label.suppress.test==FALSE){
 		labels.list<-split(circleplot.object$labels, 1:nrow(circleplot.object$labels))
 		invisible(lapply(labels.list, FUN=function(x){do.call(text, x)}))}
