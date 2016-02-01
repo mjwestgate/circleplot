@@ -16,7 +16,8 @@ check.inputs<-function(
 			wide<-input; for(i in 1:dim(wide)[1]){wide[i, i]<-NA}	# set diagonal values to NA
 			# if there are no row or column headings, add these now
 			long<-list(make.long.format(input))
-			if(length(colnames(wide))==0){wide<-lapply(long, make.wide.format)}
+			if(length(colnames(wide))==0){wide<-lapply(long, make.wide.format)
+			}else{wide<-list(wide)}
 			check.distance<-make.dist.format(long[[1]])
 			distance<-check.distance$dist.matrix
 			asymmetric<-check.distance$asymmetric
@@ -152,13 +153,12 @@ set.plot.attributes<-function(
 			x<-which(names(plot.control)=="line.width")
 			names(plot.control)[x]<-"line.widths"}
 		# replace default plot.control info with any user-specified arguments
-		names.provided<-names(plot.control)
 		for(i in 1:length(plot.defaults)){
-			if(any(names.provided==names(plot.defaults)[i])){
-			entry.thisrun<-which(names.provided==names(plot.defaults)[i])
-			plot.defaults[[i]]<-plot.control[[entry.thisrun]]
-			}}}
-
+			if(any(names(plot.control)==names(plot.defaults)[i])){
+			entry.thisrun<-which(names(plot.control)==names(plot.defaults)[i])
+			plot.defaults[i]<-plot.control[entry.thisrun]
+			}}
+		}
 
 	## FILL IN MISSING DATA WITH DEFAULTS ## 
 	# 1. plot.rotation

@@ -17,7 +17,7 @@ circleplot<-function(
 	circleplot.object<-calc.circleplot(dataset, plot.options, cluster, style) # get line and point attributes
 
 	# call plot code
-	par(mfrow=panel.dims(length(circleplot.object$lines)))
+	if(class(input)=="list")par(mfrow=panel.dims(length(circleplot.object$lines)))
 	invisible(lapply(circleplot.object$lines, function(x, plot.object, plot.options){
 
 		if(add==FALSE){
@@ -41,7 +41,7 @@ circleplot<-function(
 			invisible(lapply(labels.list, FUN=function(x){do.call(text, x)}))}
 	
 	}, plot.object= circleplot.object, plot.options= plot.options))
-	par(mfrow=c(1, 1))
+	if(class(input)=="list")par(mfrow=c(1, 1))
 
 	# return information as needed
 	return(invisible(list(locations= dataset, plot.control=plot.options)))
@@ -68,24 +68,3 @@ point.attr<-function(distance.matrix)
 			stringsAsFactors=FALSE)
 	return(point.attributes)
 	}
-
-
-
-# add keys to a circleplot
-add.key<-function (circleplot.result, labels, exclude.lines=999,  reverse=TRUE, side="right",
-	cex=1, mar, ...) 
-	{
-	# prep
-	plot.list<-get.key.dframe(circleplot.result, exclude.lines, reverse, cex)
-	if(missing(labels)==FALSE){plot.list$text$labels<-labels}
-	if(side=="right"){side<-4; mar.default=c(1, 1, 1, 5)
-		}else{side<-2; mar.default =c(1, 5, 1, 1)}
-	if(missing(mar))mar<-mar.default
-	plot.list$text<-append(plot.list$text, list(side=side, cex.axis=cex))
-	# draw
-	par(mar=mar)
-    plot(c(1) ~ c(1), ann = FALSE, axes = FALSE, type = "n", xlim =c(0, 1), ylim = c(0, 1), ...)
-	line.fun<-function(x0, x1, y0, y1, ...){lines(x=c(x0, x1), y=c(y0, y1), ...)}
-	invisible(lapply(split(plot.list$lines, c(1:nrow(plot.list$lines))), FUN=function(x){do.call("line.fun", x)}))
-	do.call("axis", plot.list$text)
-}
