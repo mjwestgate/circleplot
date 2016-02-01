@@ -6,8 +6,8 @@ check.inputs<-function(
 	{
 	# set error messages
 	# incorrect input class
-	if(any(c("dist", "matrix", "data.frame")==class(input))==F){
-		stop('circleplot only accepts inputs from the following classes: dist, matrix or data.frame')}
+	if(any(c("dist", "matrix", "data.frame", "list")==class(input))==FALSE){
+		stop('circleplot only accepts inputs from the following classes: dist, matrix data.frame, or a list of the same')}
 	
 	# ensure that long and wide versions are returned, regardless of input
 	switch(class(input),
@@ -15,16 +15,16 @@ check.inputs<-function(
 			if(dim(input)[1]!=dim(input)[2]){stop('circleplot only accepts square matrices')}
 			wide<-input; for(i in 1:dim(wide)[1]){wide[i, i]<-NA}	# set diagonal values to NA
 			# if there are no row or column headings, add these now
-			long<-make.long.format(input)
-			if(length(colnames(wide))==0){wide<-make.wide.format(long)}
-			check.distance<-make.dist.format(long)
+			long<-list(make.long.format(input))
+			if(length(colnames(wide))==0){wide<-lapply(long, make.wide.format)}
+			check.distance<-make.dist.format(long[[1]])
 			distance<-check.distance$dist.matrix
 			asymmetric<-check.distance$asymmetric
 			},
 		"data.frame"={
 			if(ncol(input)<3){stop('input data.frame has too few columns; please supply data with n>=3 columns')}#}
-			long<-input
-			wide<-make.wide.format(input[, 1:3])
+			long<-list(input)
+			wide<-list(make.wide.format(input[, 1:3]))
 			check.distance<-make.dist.format(input)
 			distance<-check.distance$dist.matrix
 			asymmetric<-check.distance$asymmetric
@@ -32,36 +32,47 @@ check.inputs<-function(
 		"dist"={
 			if(length(attr(input, "Labels"))<1){
 				attr(input, "Labels")<-paste("V", c(1:attr(input, "Size")), sep="")}
-			wide<-as.matrix(input)
-			long<-make.long.format(wide)
-			check.distance<-make.dist.format(long) # this is needed to avoid NA values in the distance matrix
+			wide<-list(as.matrix(input))
+			long<-lapply(wide, make.long.format)
+			check.distance<-make.dist.format(long[[1]]) # this is needed to avoid NA values in the distance matrix
 			distance<-check.distance$dist.matrix
 			asymmetric<-check.distance$asymmetric
-			})
+			},
+		"list"={
+			result<-clean.list(input, reduce)
+			long<-result$long
+			wide<-result$wide
+			distance<-result$distance
+			asymmetric<-result$asymmetric
+		})
 
 	# work out if input is binary or continuous
-	in.vals<-long[is.na(long[, 3])==FALSE, 3]
-	n.vals<-length(unique(in.vals))
-	if(n.vals==1){if(unique(in.vals)==1){binary.test<-TRUE}else{binary.test<-FALSE}}
-	if(n.vals==2){if(max(in.vals)==1 & min(in.vals)==0){binary.test<-TRUE
-		}else{binary.test<-FALSE}}
-	if(n.vals>2){binary.test<-FALSE}
+	binary.test.fun<-function(x){
+		in.vals<-x[is.na(x[, 3])==FALSE, 3]
+		n.vals<-length(unique(in.vals))
+		if(n.vals==1){if(unique(in.vals)==1){binary.test<-TRUE}else{binary.test<-FALSE}}
+		if(n.vals==2){if(max(in.vals)==1 & min(in.vals)==0){binary.test<-TRUE
+			}else{binary.test<-FALSE}}
+		if(n.vals>2){binary.test<-FALSE}
+		return(binary.test)
+		}
+	binary.test<-all(unlist(lapply(long, binary.test.fun)))
 
 	# binary matrices may contain rows/columns with no data; remove these before continuing
-	if(reduce){
-		keep.rows<-apply(wide, 1, function(x){length(which(is.na(x)))!=length(x)})
-		keep.cols<-apply(wide, 2, function(x){length(which(is.na(x)))!=length(x)})
+	if(class(input)!="list" & reduce){
+		keep.rows<-apply(wide[[1]], 1, function(x){length(which(is.na(x)))!=length(x)})
+		keep.cols<-apply(wide[[1]], 2, function(x){length(which(is.na(x)))!=length(x)})
 		# both are needed for asymmetric matrices
 		keep.both<-apply(cbind(keep.rows, keep.cols), 1, function(x){any(x==TRUE)})
 		keep.units<-as.numeric(which(keep.both))
-		wide<-wide[keep.units, keep.units]
+		wide<-list(wide[[1]][keep.units, keep.units])
 		distance<-as.dist(as.matrix(distance)[keep.units, keep.units])
 		# ensure long format matches
-		keep.text<-colnames(wide)[keep.units]
-		keep.test<-lapply(long[, 1:2], function(x, comp){
+		keep.text<-colnames(wide[[1]])[keep.units]
+		keep.test<-lapply(long[[1]][, 1:2], function(x, comp){
 			sapply(x, function(y, text){any(text==y)}, text=comp)}, comp=keep.text)
 		keep.vector<-apply(as.data.frame(keep.test), 1, function(x){all(x)})
-		long<-long[which(keep.vector), ]	
+		long<-list(long[[1]][which(keep.vector), ])
 		}
 
 	# export these as a list-based S3 object that can be passed to later functions
@@ -119,7 +130,7 @@ append.missed.columns<-function(
 set.plot.attributes<-function(
 	input,	# result from check.inputs
 	plot.control,
-	reduce
+	reduce # should this be here? Or put elsewhere, perhaps with cluster?
 	)
 	{
 	# FUNCTIONS ON PLOT CONTROL
@@ -133,8 +144,6 @@ set.plot.attributes<-function(
 		"na.control")
 	plot.defaults<-vector("list", length=length(control.names))
 	names(plot.defaults)<-control.names
-	# turn off clustering for numeric matrices
-	# if(input$binary==FALSE)cluster<-FALSE
 
 	# overwrite these values where others are provided
 	if(missing(plot.control)==FALSE){
@@ -160,9 +169,9 @@ set.plot.attributes<-function(
 	if(is.null(plot.defaults$par)){plot.defaults$par<-par.default}
 
 	# 3. points
-	if(is.null(plot.defaults$points) | reduce){
-		n.points<-ncol(input$wide)
-		label.vals<-colnames(input$wide)
+	if(is.null(plot.defaults$points)){ #  | reduce
+		n.points<-lapply(input$wide, ncol)[[1]]  #ncol(input$wide)
+		label.vals<-lapply(input$wide, colnames)[[1]]
 	}else{
 		n.points<-nrow(plot.defaults$points)
 		label.vals<-plot.defaults$points$labels}
@@ -241,25 +250,26 @@ set.plot.attributes<-function(
 		}}
 
 	# set defaults for line cuts, colours etc - set all to grey by default
+	line.vals<-unlist(lapply(input$long, function(x){x[, 3]}))
+	line.vals<-line.vals[which(is.na(line.vals)==FALSE)]
 	if(input$binary){
 			cut.vals<-c(-1, 2)	; line.cols<-"grey30"
 	}else{	# for numeric matrices
-		overlap.zero<-min(input$long[, 3], na.rm=TRUE)<0 & max(input$long[, 3], na.rm=TRUE)>0
+		overlap.zero<-min(line.vals)<0 & max(line.vals)>0
 		if(overlap.zero){	# diverging colour palette
-			max.val<-max(sqrt(input$long[, 3]^2), na.rm=TRUE)+0.001
+			max.val<-max(sqrt(line.vals^2))+0.001
 			cut.vals<-seq(-max.val, max.val, length.out=n.lines+1)
 			line.cols<-brewer.pal.safe(n.lines, "RdBu", type="diverging")[c(n.lines:1)]
 		}else{	# sequential colour palette
-			if(any((input$long[, 3]^2)==Inf, na.rm=TRUE)){
+			if(any((line.vals^2)==Inf)){
 				cut.vals<-seq(
-					min(input$long[which(input$long[, 3]!=-Inf), 3], na.rm=TRUE)-0.001,
-					max(input$long[which(input$long[, 3]!=Inf), 3]+0.001, na.rm=TRUE), 
+					min(line.vals[which(line.vals!=-Inf)])-0.001,
+					max(line.vals[which(line.vals!=-Inf)]+0.001), 
 					length.out=n.lines+1)
-				if(any(input$long[, 3]==Inf, na.rm=TRUE)){cut.vals[length(cut.vals)]<-Inf}
-				if(any(input$long[, 3]==-Inf, na.rm=TRUE)){cut.vals[1]<-(-Inf)}				
+				if(any(line.vals==Inf)){cut.vals[length(cut.vals)]<-Inf}
+				if(any(line.vals==-Inf)){cut.vals[1]<-(-Inf)}				
 			}else{
-				cut.vals<-seq(min(input$long[, 3], na.rm=TRUE)-0.001, 
-				max(input$long[, 3], na.rm=TRUE)+0.001, length.out=n.lines+1)}
+				cut.vals<-seq(min(line.vals)-0.001, max(line.vals)+0.001, length.out=n.lines+1)}
 			line.cols<-brewer.pal.safe(n.lines, "Purples", type="increasing")}
 	}	# end colour selection	
 
@@ -278,7 +288,7 @@ set.plot.attributes<-function(
 
 	## ERROR AVOIDANCE ##
 	# ensure line.breaks incapsulate all values of input
-	range.input<-range(input$wide, na.rm=TRUE)
+	range.input<-range(line.vals)
 	range.breaks<-range(plot.defaults$line.breaks)
 	if(range.breaks[1]>range.input[1] | range.breaks[2]<range.input[2]){
 		stop(paste(
@@ -323,6 +333,57 @@ set.plot.attributes<-function(
 
 	return(plot.defaults)
 	}
+
+
+# function to properly apply line attributes to a list
+clean.lines<-function(y, binary, options.list){
+	if(binary){
+		# remove 'absent' connections
+		y<-y[which(y$value==1), ]
+		if(nrow(y)==0){stop("No connections are available to draw - binary input must contain some present values")}
+	}else{
+		# order line list by effect size
+		effect.size<-y$value^2
+		y<-y[order(effect.size), ]}
+	# place NA values first (so they are underneath drawn values)
+	if(any(is.na(y$value))){
+		y<-y[c(
+			which(is.na(y$value)==TRUE), 
+			which(is.na(y$value)==FALSE)), ]}
+		
+	# set line colours & widths. 
+	line.cuts<-cut(y$value, options.list$line.breaks, include.lowest=TRUE, right=TRUE, labels=FALSE)
+	line.defaults<-data.frame(
+		col= options.list$line.cols[line.cuts],
+		lwd= options.list$line.widths[line.cuts],
+		lty=1,
+		arrows=TRUE,
+		stringsAsFactors=FALSE)
+
+	# whether or not arrows should be added
+	if(class(options.list$na.control)=="list"){	
+		if(any(is.na(y$value))){
+			line.defaults$col[which(is.na(y$value))]<-options.list$na.control$col
+			line.defaults$lwd[which(is.na(y$value))]<-options.list$na.control$lwd
+			line.defaults$lty[which(is.na(y$value))]<-options.list$na.control$lty
+			line.defaults$arrows[which(is.na(y$value))]<-FALSE}
+	}else{
+		if(any(is.na(y$value))){
+			keep.rows<-which(is.na(y$value)==FALSE)
+			y<-y[keep.rows, ]
+			line.defaults<-line.defaults[keep.rows, ]}
+	}
+
+	# add infomation from line.defaults to line.list
+	keep.cols<-sapply(colnames(line.defaults), FUN=function(z){any(colnames(y)==z)})
+	add.cols<-which(keep.cols==FALSE)
+	add.names<-names(add.cols)
+	y<-cbind(y, line.defaults[, add.cols])
+	new.entries<-c((ncol(y)-length(add.cols)+1):ncol(y))
+	colnames(y)[new.entries]<-add.names
+
+	return(y)}
+
 
 
 # function to take results from set.plot.attributes, and use them to create data.frames full of relevant information for plotting
@@ -427,55 +488,9 @@ calc.circleplot<-function(x, plot.options, cluster, style){
 		} # end pie style
 
 	# LINES
-	line.list<-x$long
-	colnames(line.list)[3]<-"value"
-	# work out number and order of lines to be retained/plotted
-	if(x$binary){
-		# remove 'absent' connections
-		line.list<-line.list[which(line.list$value==1), ]
-		if(nrow(line.list)==0){stop("No connections are available to draw - binary input must contain some present values")}
-	}else{
-		# order line list by effect size
-		effect.size<-line.list$value^2
-		line.list<-line.list[order(effect.size), ]}
-	# place NA values first (so they are underneath drawn values)
-	if(any(is.na(line.list$value))){
-		line.list<-line.list[c(
-			which(is.na(line.list$value)==TRUE), 
-			which(is.na(line.list$value)==FALSE)), ]}
-
-	# set line colours & widths. 
-	line.cuts<-cut(line.list$value, plot.options$line.breaks, 
-		include.lowest=TRUE, right=TRUE, labels=FALSE)
-	line.defaults<-data.frame(
-		col= plot.options$line.cols[line.cuts],
-		lwd= plot.options$line.widths[line.cuts],
-		lty=1,
-		arrows=TRUE,
-		stringsAsFactors=FALSE)
-
-	# whether or not arrows should be added
-	if(class(plot.options$na.control)=="list"){	
-		if(any(is.na(line.list$value))){
-			line.defaults$col[which(is.na(line.list$value))]<-plot.options$na.control$col
-			line.defaults$lwd[which(is.na(line.list$value))]<-plot.options$na.control$lwd
-			line.defaults$lty[which(is.na(line.list$value))]<-plot.options$na.control$lty
-			line.defaults$arrows[which(is.na(line.list$value))]<-FALSE}
-	}else{
-		if(any(is.na(line.list$value))){
-			keep.rows<-which(is.na(line.list$value)==FALSE)
-			line.list<-line.list[keep.rows, ]
-			line.defaults<-line.defaults[keep.rows, ]}
-	}
-
-	# add infomation from line.defaults to line.list
-	keep.cols<-sapply(colnames(line.defaults), FUN=function(x){any(colnames(line.list)==x)})
-	add.cols<-which(keep.cols==FALSE)
-	add.names<-names(add.cols)
-	line.list<-cbind(line.list, line.defaults[, add.cols])
-	new.entries<-c((ncol(line.list)-length(add.cols)+1):ncol(line.list))
-	colnames(line.list)[new.entries]<-add.names
-
+	line.list<-lapply(x$long, function(y, binary, options.list){
+		colnames(y)[3]<-"value"
+		clean.lines(y, binary, options.list)}, binary=x$binary, options.list=plot.options)
 
 	# PLOT
 	x.lim<-c(min(point.dframe$x), max(point.dframe$x))

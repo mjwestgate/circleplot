@@ -9,7 +9,6 @@ make.circle<-function(
 	if(missing(k))k<-1
 	base.alpha<-(-90-(180/n))
 	if(missing(alpha)){alpha<-base.alpha}else{alpha<-alpha+base.alpha}
-	# if(missing(alpha))alpha<-22.91	# as original default was 0.4 radians
 	alpha<-alpha*(pi/180) # convert to radians
 	# get coordinates
 	theta<-(2*(pi/n)*seq(0, (n-1)))-alpha
@@ -22,6 +21,23 @@ make.circle<-function(
 	rownames(values)<-c(1:nrow(values))
 	return(values)
 	}
+
+
+
+# draw a circle with specified origin, circumference and attributes
+draw.circle<-function(k, x0=0, y0=0, alpha=0, filled=FALSE, n=100, trim=0, ...){
+	data<-make.circle(n=n, alpha= alpha, k=k)[, 2:3]
+	data$x<-data$x + x0
+	data$y<-data$y + y0
+	data<-rbind(data, data[1, ])
+	if(trim>0){
+		trim.start<-c(1:trim)
+		trim.end<-c((nrow(data)-trim) : nrow(data) )
+		data<-data[-c(trim.start, trim.end), ]}
+	if(filled){polygon(data, ...)
+	}else{lines(data, ...)}
+	return(invisible(data))
+	} 
 
 
 # calculate the attributes of a triangle linking two points on the circumference and a point bisecting them, 
