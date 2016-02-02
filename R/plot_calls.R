@@ -3,11 +3,11 @@
 # function to draw a figure, if supplied with a data.frame or matrix
 circleplot<-function(
 	input,	# a distance matrix (class 'dist') or square matrix (class matrix)
-	cluster=TRUE, # should points be  rearranged using hclust? Defaults to TRUE, but currently always FALSE for numeric inputs
+	cluster=TRUE, # should points be  rearranged using hclust? Defaults to TRUE
 	reduce=FALSE, # should nodes with no connections be removed?
 	add=FALSE, # should this figure be added to an existing plot? 
+	style="classic", # "pie" or "clock" are current alternatives
 	plot.control,	# a list containing plot attributes. See ?circleplot
-	style="classic", # "pie" is the alternative; "clock" might be a fun third option (that has both points and polygons); but somewhat nonsensical given that the points and polygons would be the same colour.
 	...
 	)
 	{
@@ -29,10 +29,15 @@ circleplot<-function(
 			asymmetric=attr(plot.object, "asymmetric"), arrow.attr=plot.options$arrows))
 	
 		# add points or polygons, depending on style
-		if(style=="classic"){
-			do.call(points, as.list(plot.object$points[, -which(colnames(plot.object$points)=="labels")]))
-		}else{
-			invisible(lapply(plot.object$polygons, function(x){do.call(polygon, x)}))}
+		switch(style,
+		"classic"={do.call(points, 
+			as.list(plot.object$points[, -which(colnames(plot.object$points)=="labels")]))},
+		"pie"={invisible(lapply(plot.object$polygons, function(x){do.call(polygon, x)}))},
+		"clock"={
+			invisible(lapply(plot.object$nodes, function(x){do.call(lines, x)}))
+			freq<-xtabs(rep(1, length(plot.object$nodes)) ~ unlist(lapply(plot.object$nodes, function(x){x$col})))
+			draw.circle(col=names(sort(freq, decreasing=TRUE))[1])}
+		)
 	
 		# label points
 		label.suppress.test<-is.logical(plot.options$point.labels) & length(plot.options$point.labels)==1

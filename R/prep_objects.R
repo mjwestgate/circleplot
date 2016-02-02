@@ -48,15 +48,6 @@ check.inputs<-function(
 		})
 
 	# work out if input is binary or continuous
-	binary.test.fun<-function(x){
-		in.vals<-x[is.na(x[, 3])==FALSE, 3]
-		n.vals<-length(unique(in.vals))
-		if(n.vals==1){if(unique(in.vals)==1){binary.test<-TRUE}else{binary.test<-FALSE}}
-		if(n.vals==2){if(max(in.vals)==1 & min(in.vals)==0){binary.test<-TRUE
-			}else{binary.test<-FALSE}}
-		if(n.vals>2){binary.test<-FALSE}
-		return(binary.test)
-		}
 	binary.test<-all(unlist(lapply(long, binary.test.fun)))
 
 	# binary matrices may contain rows/columns with no data; remove these before continuing
@@ -76,6 +67,10 @@ check.inputs<-function(
 		long<-list(long[[1]][which(keep.vector), ])
 		}
 
+	# ensure distance matrices do not contain infinite values
+	for(i in 1:2){distance<-remove.inf.values(c(Inf, -Inf)[i], distance)}
+	# note that this doesn't affect plotting because all non-clustering code uses wide or long format
+
 	# export these as a list-based S3 object that can be passed to later functions
 	matrix.properties<-list(
 		binary=binary.test,
@@ -88,6 +83,28 @@ check.inputs<-function(
 	return(matrix.properties)
 	}	# end function
 
+
+# Function to ensure distance matrices do not contain infinite values; called exclusively by check.inputs
+remove.inf.values<-function(x, distmat){
+	if(any(distmat ==x)){
+		overlap.zero<-min(distmat)<0 & max(distmat)>0
+		vals<-distmat[which(distmat!=x)]
+		max.val<-max(sqrt(vals^2))*2
+		distmat[which(distmat==x)]<-(max.val * sign(x))}
+	return(distmat)
+	}
+
+
+# Function to determine whether an input is binary or continuous; called exclusively by check.inputs
+binary.test.fun<-function(x){
+	in.vals<-x[is.na(x[, 3])==FALSE, 3]
+	n.vals<-length(unique(in.vals))
+	if(n.vals==1){if(unique(in.vals)==1){binary.test<-TRUE}else{binary.test<-FALSE}}
+	if(n.vals==2){if(max(in.vals)==1 & min(in.vals)==0){binary.test<-TRUE
+		}else{binary.test<-FALSE}}
+	if(n.vals>2){binary.test<-FALSE}
+	return(binary.test)
+	}
 
 
 # function to compare supplied to default values, and return a combined data.frame with all columns
@@ -255,22 +272,23 @@ set.plot.attributes<-function(
 	if(input$binary){
 			cut.vals<-c(-1, 2)	; line.cols<-"grey30"
 	}else{	# for numeric matrices
+		line.vals.short<-line.vals
+		line.vals.short<-line.vals.short[which(line.vals.short!=Inf)]
+		line.vals.short<-line.vals.short[which(line.vals.short!=-Inf)]
+		if(length(line.vals.short)==0)stop("circleplot cannot draw matrices that consist entirely of infinite values")
 		overlap.zero<-min(line.vals)<0 & max(line.vals)>0
 		if(overlap.zero){	# diverging colour palette
-			max.val<-max(sqrt(line.vals^2))+0.001
+			max.val<-max(sqrt(line.vals.short ^2))+0.001
 			cut.vals<-seq(-max.val, max.val, length.out=n.lines+1)
+			if(any(line.vals==Inf)){cut.vals[length(cut.vals)]<-Inf}
+			if(any(line.vals==-Inf)){cut.vals[1]<-(-Inf)}	
 			line.cols<-brewer.pal.safe(n.lines, "RdBu", type="diverging")[c(n.lines:1)]
 		}else{	# sequential colour palette
-			if(any((line.vals^2)==Inf)){
-				cut.vals<-seq(
-					min(line.vals[which(line.vals!=-Inf)])-0.001,
-					max(line.vals[which(line.vals!=-Inf)]+0.001), 
-					length.out=n.lines+1)
-				if(any(line.vals==Inf)){cut.vals[length(cut.vals)]<-Inf}
-				if(any(line.vals==-Inf)){cut.vals[1]<-(-Inf)}				
-			}else{
-				cut.vals<-seq(min(line.vals)-0.001, max(line.vals)+0.001, length.out=n.lines+1)}
-			line.cols<-brewer.pal.safe(n.lines, "Purples", type="increasing")}
+			cut.vals<-seq(min(line.vals.short - 0.001), max(line.vals.short + 0.001), length.out=n.lines+1)
+			if(any(line.vals==Inf)){cut.vals[length(cut.vals)]<-Inf}
+			if(any(line.vals==-Inf)){cut.vals[1]<-(-Inf)}	
+			line.cols<-brewer.pal.safe(n.lines, "Purples", type="increasing")
+		}
 	}	# end colour selection	
 
 	# add to plot.default
@@ -283,7 +301,7 @@ set.plot.attributes<-function(
 		if(input$asymmetric){
 			plot.defaults$line.curvature <-c(add=0.2, multiply=0.3)
 		}else{plot.defaults$line.curvature <-c(add=0.25, multiply=0.35)}}
-	if(is.null(plot.defaults$na.control)){plot.defaults$na.control<-list(lwd=1, lty=2, col="grey")}
+	if(is.null(plot.defaults$na.control)){plot.defaults$na.control<-NA} #list(lwd=1, lty=2, col="grey")}
 
 
 	## ERROR AVOIDANCE ##
@@ -382,7 +400,8 @@ clean.lines<-function(y, binary, options.list){
 	new.entries<-c((ncol(y)-length(add.cols)+1):ncol(y))
 	colnames(y)[new.entries]<-add.names
 
-	return(y)}
+	return(y)
+	}
 
 
 
@@ -446,7 +465,25 @@ calc.circleplot<-function(x, plot.options, cluster, style){
 	names(point.list)<-c("points", "labels")
 
 
-	# POLYGONS
+	# Set styles
+	if(style=="clock"){
+		coord.start<-as.data.frame(
+			make.circle(n.points, alpha= plot.options$plot.rotation, k=0.9)[, 2:3])
+		point.data<-point.list$points
+		remove.cols<-c(which(colnames(point.data)=="pch"), which(colnames(point.data)=="labels"))
+		point.data<-point.data[, -remove.cols]
+		x.list<-as.list(as.data.frame(t(cbind(point.data$x, coord.start$x))))
+			names(x.list)<-rep("x", length(x.list))
+		y.list<-as.list(as.data.frame(t(cbind(point.data$y, coord.start$y))))
+			names(y.list)<-rep("y", length(y.list))
+		data.list<-split(point.data[, -c(1:2)], c(1:nrow(point.data)))
+		for(i in 1:length(data.list)){
+			coordinates<-append(x.list[i], y.list[i])
+			data.list[[i]]<-append(coordinates, data.list[[i]])
+			}
+		point.list$nodes<-data.list
+	}
+
 	if(style=="pie"){
 		# use clustering to determine whether which sets of adjacent points have unique attributes
 		point.attributes<-point.list$points[, -c(1:3)]
