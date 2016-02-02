@@ -2,20 +2,21 @@
 \alias{circleplot}
 \title{Plot a pairwise associations between nodes}
 \usage{
-circleplot(x, cluster, reduce, add, plot.control, type)
+circleplot(x, cluster, reduce, style, add, plot.control)
 }
 \arguments{
-  \item{x}{a data source containing information on pairwise associations. Can be a data.frame with 3 columns (e.g. as returned by sppairs::spaa) or a matrix of class 'matrix' or 'dist'. Alternatively, a list containing >1 of the above.}
+  \item{x}{a data source containing information on pairwise associations. The standard input is a data.frame with 3 columns, where the first two columns specify the identities of the connected nodes, and the third gives a numeric value describing the connection between those node. Alternatively, x can be a matrix of class 'matrix' or 'dist' with identical results, or list containing >1 of the above.}
 
   \item{cluster}{logical - should points be rearranged using hclust? Defaults to TRUE, unless distance.matrix contains missing values, in which case cluster is set to FALSE and cannot be overwritten.}
 
   \item{reduce}{logical - should points with no connections be removed from the plot? Defaults to FALSE}
 
-  \item{style}{command to change the style of plot presentation. Defaults to 'classic'. Currently the only other option to date is 'pie', which replaces boundary points with a thick border. Still in early testing.}
+  \item{style}{command to change the style of plot presentation, largely interms of how points are drawn on the circumference. style='classic' (the default) uses points, 'pie' uses polygons, and 'clock' uses lines.}
+
+  \item{add}{logical (defaulting to FALSE), with behaviour dependent on class(x). When class(x)=="list", default is to divide the window automatically using par(mfrow), while setting add=TRUE allows you to specify your own mfrow values. When class(x)!="list", asks whether new points and lines be added to the existing plot window.}
 
   \item{plot.control}{a list giving information on how the plot should appear. If given, may contain any or all of the named objects given in notes (below).}
 
-  \item{add}{logical (defaulting to FALSE), with behaviour dependent on class(x). When class(x)=="list", default is to divide the window automatically using par(mfrow), while setting add=TRUE allows you to specify your own mfrow values. When class(x)!="list", asks whether new points and lines be added to an existing circleplot.}
 
 }
 \value{
@@ -39,7 +40,8 @@ options for plot.control are as follows:
     \item{line.expansion}{length-1 vector giving the percentage of the line width that is lost as the line approaches a vertex; i.e. one = strong tapering, zero=no tapering. }
     \item{line.curvature}{length-2 vector (or optionally, a list) that can be used to alter line straightness (i.e. the proportional curvature of the line). If given, must contain two values; the first is used to add curvature to all lines, the second multiplies the curvature by the distance between both points. Setting line.curvature[1]=0 gives boundary lines that lack any curvature, while setting both values to zero gives straight lines. Defaults to c(add=0.25, multiply=0.35), for consistency with earlier versions. Note that high values (>0.5) make the plot difficult to read, while setting high values for both attributes can cause points and lines to fail to intersect.}
     \item{arrows}{list containing up to three named arguments: length gives the length of the arrow; angle the 'sharpness' of the arrowhead (in degrees); and distance is the proportion of line length that the arrow should be placed. Defaults are arrows=list(length=0.07, angle=10, distance=0.75)}
-	\item{na.control}{command to control plotting of missing line values. Should be a list of commands to pass to lines(), defaulting to list(lwd=1, lty=2, col="grey"). Note that other values (i.e. supplying NA, or any object other than a list) suppresses plotting of missing values: this can be useful, but may be misleading, especially for binary matrices.}
+    \item{border}{list of line attributes, passed to draw tick labels and border when style="clock" (and ignored otherwise). Note that 'tcl' is treated differently from as given in par, but still sets tick length (defaulting to -0.07).}
+	\item{na.control}{command to control plotting of missing line values. If supplied, should be a list of commands to pass to lines(), [e.g. list(lwd=1, lty=2, col="grey") ]. Defaults to NA, which suppresses lines with missing values.}
 }
 }
 

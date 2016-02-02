@@ -35,8 +35,7 @@ circleplot<-function(
 		"pie"={invisible(lapply(plot.object$polygons, function(x){do.call(polygon, x)}))},
 		"clock"={
 			invisible(lapply(plot.object$nodes, function(x){do.call(lines, x)}))
-			freq<-xtabs(rep(1, length(plot.object$nodes)) ~ unlist(lapply(plot.object$nodes, function(x){x$col})))
-			draw.circle(col=names(sort(freq, decreasing=TRUE))[1])}
+			do.call(draw.circle, plot.options$border[-which(names(plot.options$border)=="tcl")])}
 		)
 	
 		# label points

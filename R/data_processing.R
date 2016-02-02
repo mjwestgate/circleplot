@@ -118,7 +118,7 @@ clean.list<-function(x, reduce=FALSE){
 	if(reduce){
 		and.test<-apply(comparison, 1, FUN=function(y){any(y==FALSE)==FALSE})
 		keep.rows<-which(and.test)
-		if(length(keep.rows)==0){stop("No species are present in all datasets; try type='OR'")}
+		if(length(keep.rows)==0){stop("No species are present in all datasets; try reduce=FALSE")}
 		all.species<-rownames(comparison)[keep.rows]
 	}else{all.species<-rownames(comparison)}
 

@@ -127,10 +127,6 @@ append.missed.columns<-function(
 		if(length(add.cols)>0){
 			input<-merge(input, default[, c(1, add.cols)], by="labels", all.x=FALSE, all.y=TRUE)
 			}
-		# ensure 'labels' column is placed first
-		# cols<-c(1:dim(input)[2])
-		# label.col<-which(colnames(input)=="labels")
-		# input<-input[, c(label.col, cols[-label.col])]
 		}
 	if(class(default)=="list"){
 		if(length(add.cols)>0){
@@ -151,7 +147,6 @@ set.plot.attributes<-function(
 	reduce # should this be here? Or put elsewhere, perhaps with cluster?
 	)
 	{
-	# FUNCTIONS ON PLOT CONTROL
 	## GENERATE AND FILL AN EMPTY LIST FOR PLOT.CONTROL ##
 	control.names<-c("plot.rotation", "par", "plot",
 		"points", 
@@ -159,6 +154,7 @@ set.plot.attributes<-function(
 		"line.breaks", "line.cols", "line.widths", 
 		"line.gradient", "line.expansion", "line.curvature", 
 		"arrows",
+		"border",
 		"na.control")
 	plot.defaults<-vector("list", length=length(control.names))
 	names(plot.defaults)<-control.names
@@ -301,7 +297,17 @@ set.plot.attributes<-function(
 		if(input$asymmetric){
 			plot.defaults$line.curvature <-c(add=0.2, multiply=0.3)
 		}else{plot.defaults$line.curvature <-c(add=0.25, multiply=0.35)}}
-	if(is.null(plot.defaults$na.control)){plot.defaults$na.control<-NA} #list(lwd=1, lty=2, col="grey")}
+
+	# set NA values
+	if(is.null(plot.defaults$na.control)){plot.defaults$na.control<-NA
+	}else{plot.defaults$na.control<-append.missed.columns(
+		plot.defaults$na.control, list(lwd=1, lty=2, col="grey50"))}
+
+	# set border for style="clock"
+	border.default<-list(lwd=1, lty=1, col="grey30", tcl=-0.07)
+	if(is.null(plot.defaults$border)){plot.defaults$border<-border.default
+	}else{plot.defaults$border <-append.missed.columns(
+		plot.defaults$border, border.default)}
 
 
 	## ERROR AVOIDANCE ##
@@ -468,18 +474,20 @@ calc.circleplot<-function(x, plot.options, cluster, style){
 	# Set styles
 	if(style=="clock"){
 		coord.start<-as.data.frame(
-			make.circle(n.points, alpha= plot.options$plot.rotation, k=0.9)[, 2:3])
-		point.data<-point.list$points
-		remove.cols<-c(which(colnames(point.data)=="pch"), which(colnames(point.data)=="labels"))
-		point.data<-point.data[, -remove.cols]
-		x.list<-as.list(as.data.frame(t(cbind(point.data$x, coord.start$x))))
+			make.circle(n.points, alpha= plot.options$plot.rotation, k=(1 + plot.options$border$tcl))[, 2:3])
+		# point.data<-point.list$points
+		# remove.cols<-c(which(colnames(point.data)=="pch"), which(colnames(point.data)=="labels"))
+		# point.data<-point.data[, -remove.cols]
+		x.list<-as.list(as.data.frame(t(cbind(point.list$points$x, coord.start$x))))
 			names(x.list)<-rep("x", length(x.list))
-		y.list<-as.list(as.data.frame(t(cbind(point.data$y, coord.start$y))))
+		y.list<-as.list(as.data.frame(t(cbind(point.list$points$y, coord.start$y))))
 			names(y.list)<-rep("y", length(y.list))
-		data.list<-split(point.data[, -c(1:2)], c(1:nrow(point.data)))
+		# data.list<-split(point.data[, -c()], c(1:nrow(point.data)))
+		border.attr<-plot.options$border[-which(names(plot.options$border)=="tcl")]
+		data.list<-vector("list", length(x.list)) 
 		for(i in 1:length(data.list)){
 			coordinates<-append(x.list[i], y.list[i])
-			data.list[[i]]<-append(coordinates, data.list[[i]])
+			data.list[[i]]<-append(coordinates, border.attr)
 			}
 		point.list$nodes<-data.list
 	}
