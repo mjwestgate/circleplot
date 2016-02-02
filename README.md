@@ -1,83 +1,65 @@
 circleplot
 ==========
 
-Tools for exploring distance and association matrices using circular plots. Also allows plotting of binary directional matrices.
-
-NOTE: THIS VERSION IS IN ACTIVE DEVELOPMENT AND MAY CONTAIN ERRORS: USE WITH CAUTION.
+Tools for exploring distance and association matrices using circular plots.
 
 # Example:
 ```
+# SIMPLE APPLICATIONS
 # get circleplot
 library(devtools)
-install_github('circleplot', 'mjwestgate')
+install_github('mjwestgate/circleplot')
 library(circleplot)
 
-# example plots using fake data
-
-# create a binary matrix
-# asymmetric, square matrix
+# create some binary datasets
 binary.matrix<-matrix(
   data=cut(rnorm(11**2), breaks=c(-20, 0, 20), labels=FALSE)-1,
-  nrow=11, ncol=11)
-# symmetric, lower-triangular matrix
-binary.dist<-as.dist(binary.matrix)
+  nrow=11, ncol=11) # asymmetric, square matrix
+binary.dist<-as.dist(binary.matrix) # symmetric, lower-triangular matrix
+
+# examples
+circleplot(binary.dist) # default settings
+circleplot(binary.dist, cluster=FALSE) # change point arrangement
+circleplot(binary.dist, style="clock") # change style
+
+# set point attributes and plot
+point.attributes<-point.attr(binary.dist)
+point.attributes$cex<-0.7
+circleplot(binary.dist, style="pie", cluster=FALSE, plot.control=list(
+    points=point.attributes, 
+    line.gradient=TRUE))
 
 # numeric matrices
-# asymmetric, square
-numeric.matrix<-matrix(data=rnorm(11**2), nrow=11, ncol=11)
-# symmetric, lower-triangular
-numeric.dist<-as.dist(numeric.matrix)
+numeric.matrix<-matrix(data=rnorm(11**2), nrow=11, ncol=11) # asymmetric, square
+numeric.dist<-as.dist(numeric.matrix) # symmetric, lower-triangular
 
-# set point colours for any of the above matrice (as all have same dimensions)
-# library(RColorBrewer)
-point.attributes<-point.attr(binary.dist)
-
-# test binary presentation
-circleplot(binary.dist)	# default grey
-circleplot(binary.dist, plot.control=list(points=point.attributes))	# change point colours only
-circleplot(binary.dist, plot.control=list(line.cols="blue"))	# change line colours only
-circleplot(binary.dist, plot.control=list(
-	line.width=3, line.expansion=0.7))	# change line appearance only
-circleplot(binary.dist, plot.control=list(
-	points=point.attributes, line.gradient=TRUE))	# line colours blend between point colours
-
-# test binary asymmetric presentation
-circleplot(binary.matrix)	# default: direction indicated by change from light to dark grey
-circleplot(binary.matrix, plot.control=list(line.cols="blue"))	# change arrow end of the line
-circleplot(binary.matrix, plot.control=list(line.cols=c("lightsteelblue","black")))	# change both line cols
-
-# test numeric matrix presentation
-circleplot(numeric.dist) # default settings if min<0<max
-circleplot(numeric.dist-min(numeric.dist)) # default if min>0
-circleplot(numeric.dist, plot.control=list(
-	line.breaks=c(-20, -1, -0.5, 0, 0.5, 1, 20),
-	line.cols=brewer.pal(6, "PuOr")[6:1]))	# set own breaks and colour palette
-circleplot(numeric.dist, plot.control=list(line.width=c(1, 3))) # set larger effect sizes to have thicker lines
-circleplot(numeric.dist, plot.control=list(
-	line.width=c(1, 4),
-	line.expansion=0.8)) # add curves to above example
-
-# test a numeric asymmetric matrix
-circleplot(numeric.matrix)	# intentionally fails - code incomplete as yet
+# examples
+circleplot(numeric.dist, style="classic") # default
+circleplot(numeric.dist-min(numeric.dist), style="clock",
+    plot.control=list(border=list(lwd=2))) # version with only positive values
 
 
-# draw the best of the above
-quartz(width=5, height=5)
-par(mfrow=c(2, 2))
+# NEW FEATURES AT V0.4
+library(sppairs)
+library(cooccur)
+data(beetles)
 
-# binary symmetric
-circleplot(binary.dist, plot.control=list(
-	points=point.attributes, line.gradient=TRUE,
-	line.width=3, line.expansion=0.7))
-# binary asymmetric/directional
-circleplot(binary.matrix, plot.control=list(line.cols=c("lightsteelblue","black"),
-	line.width=3, line.expansion=0.7))
-# +ve only numeric matrix
-circleplot(numeric.dist-min(numeric.dist),
-	plot.control=list(line.width=c(1, 3), line.expansion=0.5))
-# diverging numeric matrix
-circleplot(numeric.dist, plot.control=list(
-	line.width=c(1, 3), line.expansion=0.5))
+# manually reorder points
+point.order<-point.attributes
+point.order$order<-c(nrow(point.order):1)
+circleplot(binary.matrix, style="pie", cluster=TRUE, plot.control=list(
+    arrows=list(length=0),
+    points=point.order, 
+    line.gradient=TRUE))
 
-par(mfrow=c(1, 1))
+# manually specify line attributes
+input<-spaa(beetles)
+input$col<-"red"; input$col[which(input$sp1=="V1")]<-"blue"
+circleplot(input, cluster=FALSE, style="clock")
+
+# plot a list of datasets
+data.list<-list(beetles[, 1:8], beetles[, 4:12], beetles[, 8:16], beetles[, 10:17])
+names(data.list)<-paste("subset", c(1:4), sep="_")
+spaa.list<-lapply(data.list, function(x){spaa(x, method="or.symmetric")})
+circleplot(spaa.list, cluster=FALSE, style="clock")
 ```
