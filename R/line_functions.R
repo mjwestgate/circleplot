@@ -53,9 +53,15 @@ calc.lines<-function(x, points, distance, plot.options)
 	coords.scaled<-triangle.coords(coords, distance.thisrun) # what coordinates should the curve be fit to?
 
 	# calculate the curve that fits between these points.
-	apex<-curve.apex(coords, distance.thisrun)
-	curve.coords<-fit.quadratic(coords.scaled)
-	new.curve<-reposition.curve(curve.coords, apex, coords)
+	if(coords.scaled$y[2]>0.0001){
+		apex<-curve.apex(coords, distance.thisrun)
+		curve.coords<-fit.quadratic(coords.scaled)
+		new.curve<-reposition.curve(curve.coords, apex, coords)
+	}else{	# i.e. if a straight line
+		new.curve<-list(
+			x=seq(coords$x[1], coords$x[2], length.out=101), 
+			y=seq(coords$y[1], coords$y[2], length.out=101))
+	} 
 
 	# ensure that curves run from their start to end point
 	first.x<-which.min(sqrt((coords$x[1]-new.curve$x)^2))

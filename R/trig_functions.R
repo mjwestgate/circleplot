@@ -109,7 +109,11 @@ reposition.curve<-function(
 	{
 
 	# set rotation behaviour
-	if(sqrt( (apex$coordinates$x[2]^2) + (apex$coordinates$y[2]^2)) <10^-5){
+	flip.test<-c(
+		apex$angle==pi/2 & all(coords$y > 0),  # lying above origin
+		sqrt( (apex$coordinates$x[2]^2) + (apex$coordinates$y[2]^2)) <10^-5 # close to zero
+		)
+	if(any(flip.test)){
 		angle.list<-as.list(apex$angle - (c(0.5, 1.5) * pi))
 	}else{
 		angle.list<-list(apex$angle - (0.5 * pi))}
