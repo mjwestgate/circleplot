@@ -182,12 +182,17 @@ set.plot.attributes<-function(
 	if(is.null(plot.defaults$par)){plot.defaults$par<-par.default}
 
 	# 3. points
+	matrix.labels<-lapply(input$wide, colnames)[[1]]
 	if(is.null(plot.defaults$points)){ #  | reduce
 		n.points<-lapply(input$wide, ncol)[[1]]  #ncol(input$wide)
-		label.vals<-lapply(input$wide, colnames)[[1]]
+		label.vals<-matrix.labels
 	}else{
 		n.points<-nrow(plot.defaults$points)
-		label.vals<-plot.defaults$points$labels}
+		label.vals<-plot.defaults$points$labels
+		# check these match
+		if(all(sort(matrix.labels)==sort(label.vals))==FALSE){
+			stop("supplied point labels do not match those from the input matrix or data.frame")}
+		}
 	# generate a 'null' data.frame
 	point.defaults<-data.frame(
 			labels= label.vals,

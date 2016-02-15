@@ -66,7 +66,7 @@ circleplot<-function(
 point.attr<-function(distance.matrix)
 	{
 	if(length(attr(distance.matrix, "Labels"))==0){
-		attr(distance.matrix, "Labels")<-c(1:attr(distance.matrix, "Size"))}
+		attr(distance.matrix, "Labels")<-paste("V", c(1:attr(distance.matrix, "Size")), sep="")}
 	labels<-as.character(attr(distance.matrix, "Labels"))
 	color.hex<-c(RColorBrewer::brewer.pal(8, "Dark2"), 
 		brewer.pal(9, "Set1"),
