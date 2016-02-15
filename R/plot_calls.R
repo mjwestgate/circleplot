@@ -11,6 +11,11 @@ circleplot<-function(
 	...
 	)
 	{
+	# catch errors
+	if(any(c("classic", "pie", "clock")==style)==FALSE){
+		warning(paste("style = '", style, "' not recognised: switched to style = 'classic'", sep=""))
+		style<-"classic"}
+
 	# initial processing
 	dataset<-check.inputs(input, reduce)
 	plot.options<-set.plot.attributes(dataset, plot.control, reduce) # set plot attributes/defaults
@@ -20,14 +25,17 @@ circleplot<-function(
 	if(class(input)=="list")par(mfrow=panel.dims(length(circleplot.object$lines)))
 	invisible(lapply(circleplot.object$lines, function(x, plot.object, plot.options){
 
+		# set plot window attributes
 		if(add==FALSE){
 			do.call(par, plot.object$par)
 			do.call(plot, plot.object$plot)}
+
+		# add lines
 		invisible(lapply(get.curves(plot.object$points, x, plot.options), FUN=function(z, asymmetric, arrow.attr){
 			draw.curves(z)
 			if(asymmetric)draw.arrows(z, arrow.attr)},
 			asymmetric=attr(plot.object, "asymmetric"), arrow.attr=plot.options$arrows))
-	
+
 		# add points or polygons, depending on style
 		switch(style,
 		"classic"={do.call(points, 

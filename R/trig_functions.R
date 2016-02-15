@@ -73,8 +73,7 @@ curve.apex<-function(coords, pc.scale=0.5)
 		y=c(mean.point[2], as.numeric(mean.point[2]-(opp*multiplier))))
 		# note: *sign() necessary to avoid -ve x vals giving apex(s) that are outside of the circle
 	rownames(result)<-c("mean", "apex")
-	output<-list(as.numeric(angle2), result)
-		names(output)<-c("angle", "coordinates")
+	output<-list(angle=as.numeric(angle2), coordinates=result)
 	return(output)
 	}
 
@@ -103,29 +102,46 @@ fit.quadratic<-function(coords)
 
 # take curved line give by fit.quadratic(), and rotate to the angle given by curve.apex()
 reposition.curve<-function(
-	curve,	# data.frame returned by fit.circle
-	apex		# list returned by curve.apex
+	curve,	# data.frame returned by fit.quadratic
+	apex	,	# list returned by curve.apex
+	coords
 	)
 	{
-	adjusted.angle<-apex$angle-(90*pi/180)	# because your curve faces down, not right
-	curve$y<-curve$y-curve$y[51]	# set apex =0,0
-	if(sqrt(apex$coordinates$x[2]^2)<10^-10){	# apex x value close to zero
-		if(apex$coordinates$y[2]>0){curve$y<-(-curve$y)}
-		curve.new<-curve
-		# no adjustment required for y<0
-	}else{	# i.e. not directly above or below origin
-		if(apex$coordinates$x[2]<0){
-			x.new<-(curve$x*cos(adjusted.angle))-(curve$y*sin(adjusted.angle))	# calculate transformation
-			y.new<-(curve$x*sin(adjusted.angle))+(curve$y*cos(adjusted.angle))
+
+	# set rotation behaviour
+	if(sqrt( (apex$coordinates$x[2]^2) + (apex$coordinates$y[2]^2)) <10^-5){
+		angle.list<-as.list(apex$angle - (c(0.5, 1.5) * pi))
+	}else{
+		angle.list<-list(apex$angle - (0.5 * pi))}
+
+	# set apex =0,0
+	curve$y<-curve$y-curve$y[51]	
+
+	# calculate curves
+	curve.list<-lapply(angle.list, function(x, curve.info, below.zero){
+		if(below.zero){
+			result<-data.frame(
+				x=(curve.info$x*cos(x)) - (curve.info$y*sin(x)),
+				y=(curve.info$x*sin(x)) + (curve.info$y*cos(x)))
 		}else{
-			x.new<-(curve$x*cos(adjusted.angle))+(curve$y*sin(adjusted.angle))	# calculate transformation
-			y.new<-(curve$x*sin(adjusted.angle))-(curve$y*cos(adjusted.angle))
+			result<-data.frame(
+				x=(curve.info$x*cos(x)) + (curve.info$y*sin(x)),
+				y=(curve.info$x*sin(x)) - (curve.info$y*cos(x)))
 		}
-		curve.new<-data.frame(x=x.new, y=y.new)		# put in new dataframe
-	}
-	curve.new$x<-curve.new$x+apex$coordinates$x[2]	# position to new x,y
-	curve.new$y<-curve.new$y+apex$coordinates$y[2]	
-	return(curve.new)
+		return(result)},
+		curve.info=curve, below.zero=c(apex$coordinates$x[2]<=0))
+
+	# change origin
+	curve.list<-lapply(curve.list, function(x, add){x$x<-x$x+add; return(x)}, add=apex$coordinates$x[2])
+	curve.list<-lapply(curve.list, function(x, add){x$y<-x$y+add; return(x)}, add=apex$coordinates$y[2])
+
+	distance.count<-unlist(lapply(curve.list, function(x, lookup){
+		new.coords<-data.frame(x=x$x-lookup$x, y=x$y-lookup$y)
+		new.distances<-sqrt(new.coords$x^2 + new.coords$y^2)
+		length(which(new.distances<10^-3))
+		}, lookup=coords[1 ,]))
+
+	return(as.list(curve.list[[which.max(distance.count)]]))
 	}
 
 

@@ -300,8 +300,11 @@ set.plot.attributes<-function(
 
 	# set NA values
 	if(is.null(plot.defaults$na.control)){plot.defaults$na.control<-NA
-	}else{plot.defaults$na.control<-append.missed.columns(
-		plot.defaults$na.control, list(lwd=1, lty=2, col="grey50"))}
+	}else{
+		if(length(plot.defaults$na.control)>1 & is.na(plot.defaults$na.control[[1]])==FALSE){
+			plot.defaults$na.control<-append.missed.columns(
+				plot.defaults$na.control, list(lwd=1, lty=2, col="grey50"))}
+		}
 
 	# set border for style="clock"
 	border.default<-list(lwd=1, lty=1, col="grey30", tcl=-0.07)

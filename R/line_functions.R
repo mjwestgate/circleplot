@@ -20,7 +20,6 @@ get.curves<-function(
 	points, # from calc.circleplot 
 	lines,
 	plot.options # from set.plot.attributes
-	# initial # data supplied to circleplot
 	)
 	{
 
@@ -48,29 +47,19 @@ calc.lines<-function(x, points, distance, plot.options)
 	row1<-which(points$labels== x$sp1)
 	row2<-which(points$labels== x$sp2)
 	coords<-data.frame(x= points$x[c(row1, row2)], y= points$y[c(row1, row2)])
-	
+
 	# find basic spatial info on these points
 	distance.thisrun<-distance[row1, row2]
 	coords.scaled<-triangle.coords(coords, distance.thisrun) # what coordinates should the curve be fit to?
 
 	# calculate the curve that fits between these points.
-	# Note that if there are an even number of points, some will pass through the intercept, causing earlier code to fail
-	if(coords.scaled$y[2]>0.0001){
-		apex<-curve.apex(coords, distance.thisrun)
-		curve.coords<-fit.quadratic(coords.scaled)
-		new.curve<-as.list(reposition.curve(curve.coords, apex))
-	}else{	# i.e. if a straight line
-		new.curve<-list(
-			x=seq(coords$x[1], coords$x[2], length.out=101), 
- 				y=seq(coords$y[1], coords$y[2], length.out=101))
-	} 
+	apex<-curve.apex(coords, distance.thisrun)
+	curve.coords<-fit.quadratic(coords.scaled)
+	new.curve<-reposition.curve(curve.coords, apex, coords)
 
 	# ensure that curves run from their start to end point
-	large.x<-which(sqrt(coords$x^2)>10^-3)
-	if(length(large.x)>1){large.x<-1}
-	if(large.x==1){order.test<-new.curve$x[1]-coords$x[large.x]
-	}else{order.test<-new.curve$x[101]-coords$x[large.x]}
-	if(sqrt(order.test^2)>10^-4){
+	first.x<-which.min(sqrt((coords$x[1]-new.curve$x)^2))
+	if(first.x>1){
 		new.curve$x<-new.curve$x[101:1]	
 		new.curve$y<-new.curve$y[101:1]}
 
@@ -98,12 +87,7 @@ calc.lines<-function(x, points, distance, plot.options)
 
 
 # function to determine what kind of arrowhead to draw (if any) and then draw result from get.arrows()
-# note: if(asymmetric) is already called; so we only need to know whether an arrow should be drawn, and in which direction
 draw.arrows<-function(x, attr){
-	# switch(x$direction,
-		 # 1=={draw<-TRUE; reverse<-FALSE},
-		 # # 2=={draw<-TRUE; reverse<-TRUE},
-		 # 3=={draw<-FALSE; reverse<-NA})
 	if(x$arrows){
 		if(length(x$col)>1){col.final<-x$col[ceiling(101*attr$distance)]
 		}else{col.final<-x$col}
