@@ -9,26 +9,35 @@ make.circle<-function(
 	if(missing(k))k<-1
 	base.alpha<-(-90-(180/n))
 	if(missing(alpha)){alpha<-base.alpha}else{alpha<-alpha+base.alpha}
-	# if(missing(alpha))alpha<-22.91	# as original default was 0.4 radians
-
-	# convert to radians
-	alpha<-alpha*(pi/180)
-
-	# create output dataframe
-	values<-as.data.frame(matrix(data=NA, nrow=n, ncol=3))
-		colnames(values)<-c("theta", "x", "y")
-	for(i in 1:n)	# run loop to calculate all points
-		{
-		values$theta[i]<-(2*(pi/n)*seq(0, (n-1))[i])-alpha
-		values$x[i]<-k*cos(values$theta[i])
-		values$y[i]<-k*sin(values$theta[i])
-		}
-
+	alpha<-alpha*(pi/180) # convert to radians
+	# get coordinates
+	theta<-(2*(pi/n)*seq(0, (n-1)))-alpha
+	values<-data.frame(
+		theta=theta,
+		x=k*cos(theta),
+		y=k*sin(theta))
 	# reorder such that circle is drawn clockwise from the top
 	values<-values[c(nrow(values):1), ]
 	rownames(values)<-c(1:nrow(values))
 	return(values)
 	}
+
+
+
+# draw a circle with specified origin, circumference and attributes
+draw.circle<-function(k, x0=0, y0=0, alpha=0, filled=FALSE, n=100, trim=0, ...){
+	data<-make.circle(n=n, alpha= alpha, k=k)[, 2:3]
+	data$x<-data$x + x0
+	data$y<-data$y + y0
+	data<-rbind(data, data[1, ])
+	if(trim>0){
+		trim.start<-c(1:trim)
+		trim.end<-c((nrow(data)-trim) : nrow(data) )
+		data<-data[-c(trim.start, trim.end), ]}
+	if(filled){polygon(data, ...)
+	}else{lines(data, ...)}
+	return(invisible(data))
+	} 
 
 
 # calculate the attributes of a triangle linking two points on the circumference and a point bisecting them, 
@@ -64,8 +73,7 @@ curve.apex<-function(coords, pc.scale=0.5)
 		y=c(mean.point[2], as.numeric(mean.point[2]-(opp*multiplier))))
 		# note: *sign() necessary to avoid -ve x vals giving apex(s) that are outside of the circle
 	rownames(result)<-c("mean", "apex")
-	output<-list(as.numeric(angle2), result)
-		names(output)<-c("angle", "coordinates")
+	output<-list(angle=as.numeric(angle2), coordinates=result)
 	return(output)
 	}
 
@@ -94,27 +102,66 @@ fit.quadratic<-function(coords)
 
 # take curved line give by fit.quadratic(), and rotate to the angle given by curve.apex()
 reposition.curve<-function(
-	curve,	# data.frame returned by fit.circle
-	apex		# list returned by curve.apex
+	curve,	# data.frame returned by fit.quadratic
+	apex	,	# list returned by curve.apex
+	coords
 	)
 	{
-	adjusted.angle<-apex$angle-(90*pi/180)	# because your curve faces down, not right
-	curve$y<-curve$y-curve$y[51]	# set apex =0,0
-	if(sqrt(apex$coordinates$x[2]^2)<10^-10){	# apex x value close to zero
-		if(apex$coordinates$y[2]>0){curve$y<-(-curve$y)}
-		curve.new<-curve
-		# no adjustment required for y<0
-	}else{	# i.e. not directly above or below origin
-		if(apex$coordinates$x[2]<0){
-			x.new<-(curve$x*cos(adjusted.angle))-(curve$y*sin(adjusted.angle))	# calculate transformation
-			y.new<-(curve$x*sin(adjusted.angle))+(curve$y*cos(adjusted.angle))
+
+	# set rotation behaviour
+	flip.test<-c(
+		apex$angle==pi/2 & all(coords$y > 0),  # lying above origin
+		sqrt( (apex$coordinates$x[2]^2) + (apex$coordinates$y[2]^2)) <10^-5 # close to zero
+		)
+	if(any(flip.test)){
+		angle.list<-as.list(apex$angle - (c(0.5, 1.5) * pi))
+	}else{
+		angle.list<-list(apex$angle - (0.5 * pi))}
+
+	# set apex =0,0
+	curve$y<-curve$y-curve$y[51]	
+
+	# calculate curves
+	curve.list<-lapply(angle.list, function(x, curve.info, below.zero){
+		if(below.zero){
+			result<-data.frame(
+				x=(curve.info$x*cos(x)) - (curve.info$y*sin(x)),
+				y=(curve.info$x*sin(x)) + (curve.info$y*cos(x)))
 		}else{
-			x.new<-(curve$x*cos(adjusted.angle))+(curve$y*sin(adjusted.angle))	# calculate transformation
-			y.new<-(curve$x*sin(adjusted.angle))-(curve$y*cos(adjusted.angle))
+			result<-data.frame(
+				x=(curve.info$x*cos(x)) + (curve.info$y*sin(x)),
+				y=(curve.info$x*sin(x)) - (curve.info$y*cos(x)))
 		}
-		curve.new<-data.frame(x=x.new, y=y.new)		# put in new dataframe
+		return(result)},
+		curve.info=curve, below.zero=c(apex$coordinates$x[2]<=0))
+
+	# change origin
+	curve.list<-lapply(curve.list, function(x, add){x$x<-x$x+add; return(x)}, add=apex$coordinates$x[2])
+	curve.list<-lapply(curve.list, function(x, add){x$y<-x$y+add; return(x)}, add=apex$coordinates$y[2])
+
+	distance.count<-unlist(lapply(curve.list, function(x, lookup){
+		new.coords<-data.frame(x=x$x-lookup$x, y=x$y-lookup$y)
+		new.distances<-sqrt(new.coords$x^2 + new.coords$y^2)
+		length(which(new.distances<10^-3))
+		}, lookup=coords[1 ,]))
+
+	return(as.list(curve.list[[which.max(distance.count)]]))
 	}
-	curve.new$x<-curve.new$x+apex$coordinates$x[2]	# position to new x,y
-	curve.new$y<-curve.new$y+apex$coordinates$y[2]	
-	return(curve.new)
+
+
+# add polygon to edge of circle
+make.polygon<-function(x, points, options, res){ #=segment.dframe, point.dframe.total, plot.options){
+	min.selector<-cbind(points$x-x$x[1], points$y-x$y[1])
+	row.start<-which.min(apply(min.selector, 1, function(x){sum(x^2)})) - (res/2)
+	a<-nrow(x)
+	min.selector<-cbind(points$x-x$x[a], points$y-x$y[a])
+	row.end<-which.min(apply(min.selector, 1, function(x){sum(x^2)})) + (res/2)
+	# use this to make a polygon-type data.frame
+	rows<-c(row.start:row.end); inv.rows<-c(row.end:row.start)
+	poly.final<-list(
+		x= c(points$x[rows], points$x.max[inv.rows]),
+		y= c(points$y[rows], points$y.max[inv.rows]),
+		border=NA,
+		col=x$col[1])
+	return(poly.final)
 	}

@@ -1,1 +1,1 @@
-export(add.key, calc.overlap, clean.list, circleplot, make.circle, make.long.format, make.wide.format, point.attr)
+export(circleplot, draw.circle, make.circle, make.long.format, make.wide.format, point.attr)
