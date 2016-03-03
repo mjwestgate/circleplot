@@ -31,9 +31,10 @@ circleplot<-function(
 			do.call(plot, plot.object$plot)}
 
 		# add lines
-		invisible(lapply(get.curves(plot.object$points, x, plot.options), FUN=function(z, asymmetric, arrow.attr){
-			draw.curves(z)
-			if(asymmetric)draw.arrows(z, arrow.attr)},
+		invisible(lapply(get.curves(plot.object$points, x, plot.options), 
+			FUN=function(z, asymmetric, arrow.attr){
+				draw.curves(z)
+				if(asymmetric)draw.arrows(z, arrow.attr)},
 			asymmetric=attr(plot.object, "asymmetric"), arrow.attr=plot.options$arrows))
 
 		# add points or polygons, depending on style

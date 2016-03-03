@@ -67,7 +67,8 @@ curve.apex<-function(coords, pc.scale=0.5)
 	hyp<-as.numeric(sqrt(mean.point[1]^2+ mean.point[2]^2)*pc.scale)
 	adj<-as.numeric(hyp*cos(angle2))
 	opp<-as.numeric(hyp*sin(angle2))
-	multiplier<-sign(mean.point[1]); if(multiplier==0)multiplier<-1
+	multiplier<-sign(mean.point[1])
+	if(multiplier<0.001 & multiplier>-0.001)multiplier<-1
 	result<-data.frame(
 		x=c(mean.point[1], as.numeric(mean.point[1]-(adj*multiplier))), 
 		y=c(mean.point[2], as.numeric(mean.point[2]-(opp*multiplier))))
@@ -110,7 +111,7 @@ reposition.curve<-function(
 
 	# set rotation behaviour
 	flip.test<-c(
-		apex$angle==pi/2 & all(coords$y > 0),  # lying above origin
+		any((pi*seq(0, 2, 0.5))==apex$angle), # precisely horizontal #& all(coords$y > 0),  # lying above origin
 		sqrt( (apex$coordinates$x[2]^2) + (apex$coordinates$y[2]^2)) <10^-5 # close to zero
 		)
 	if(any(flip.test)){
