@@ -21,45 +21,54 @@ circleplot<-function(
 	plot.options<-set.plot.attributes(dataset, plot.control, reduce) # set plot attributes/defaults
 	circleplot.object<-calc.circleplot(dataset, plot.options, cluster, style) # get line and point attributes
 
-	# call plot code
+	# calculate inter-point distances, to allow setting of pc.scale (to calculate curvature of lines relative to origin)
+	point.distance<-dist(circleplot.object$points[, c("x", "y")])
+	scale.distance<-point.distance-min(point.distance)
+	scale.distance<-((scale.distance/max(scale.distance))*
+		plot.options$line.curvature[2])+ plot.options$line.curvature[1]
+	scale.distance<-as.matrix(scale.distance)
+
+	# set plot window attributes
+	if(add==FALSE){
+		do.call(par, circleplot.object$par)
+		do.call(plot, circleplot.object$plot)}
 	if(class(input)=="list")par(mfrow=panel.dims(length(circleplot.object$lines)))
-	invisible(lapply(circleplot.object$lines, function(x, plot.object, plot.options){
 
-		# set plot window attributes
-		if(add==FALSE){
-			do.call(par, plot.object$par)
-			do.call(plot, plot.object$plot)}
+	# loop to calculate lines of requisite location and colour
+	line.data<-circleplot.object$lines[[1]]
+	line.list<-split(line.data, c(1:nrow(line.data)))
+	line.list<-lapply(line.list, function(x, plot.object, distance, options){
+		calc.lines(x, plot.object, distance, options)},
+		plot.object=circleplot.object, distance=scale.distance, options= plot.options)
 
-		# add lines
-		invisible(lapply(get.curves(plot.object$points, x, plot.options), 
-			FUN=function(z, asymmetric, arrow.attr){
-				draw.curves(z)
-				if(asymmetric)draw.arrows(z, arrow.attr)},
-			asymmetric=attr(plot.object, "asymmetric"), arrow.attr=plot.options$arrows))
+	# draw these lines
+	invisible(lapply(line.list, 
+		FUN=function(z, asymmetric, arrow.attr){
+			draw.curves(z)
+			if(asymmetric)draw.arrows(z, arrow.attr)},
+		asymmetric=attr(circleplot.object, "asymmetric"), arrow.attr=plot.options$arrows))
 
-		# add points or polygons, depending on style
-		switch(style,
-		"classic"={do.call(points, 
-			as.list(plot.object$points[, -which(colnames(plot.object$points)=="labels")]))},
-		"pie"={invisible(lapply(plot.object$polygons, function(x){do.call(polygon, x)}))},
-		"clock"={
-			invisible(lapply(plot.object$nodes, function(x){do.call(lines, x)}))
-			do.call(draw.circle, plot.options$border[-which(names(plot.options$border)=="tcl")])}
-		)
+	# add points or polygons, depending on style
+	switch(style,
+	"classic"={do.call(points, 
+		as.list(circleplot.object$points[, -which(colnames(circleplot.object$points)=="labels")]))},
+	"pie"={invisible(lapply(circleplot.object$polygons, function(x){do.call(polygon, x)}))},
+	"clock"={
+		invisible(lapply(circleplot.object$nodes, function(x){do.call(lines, x)}))
+		do.call(draw.circle, plot.options$border[-which(names(plot.options$border)=="tcl")])}
+	)
+
+	# label points
+	label.suppress.test<-is.logical(plot.options$point.labels) & length(plot.options$point.labels)==1
+	if(label.suppress.test==FALSE){
+		labels.list<-split(circleplot.object$labels, 1:nrow(circleplot.object$labels))
+		invisible(lapply(labels.list, FUN=function(x){do.call(text, x)}))}
 	
-		# label points
-		label.suppress.test<-is.logical(plot.options$point.labels) & length(plot.options$point.labels)==1
-		if(label.suppress.test==FALSE){
-			labels.list<-split(plot.object$labels, 1:nrow(plot.object$labels))
-			invisible(lapply(labels.list, FUN=function(x){do.call(text, x)}))}
-	
-	}, plot.object= circleplot.object, plot.options= plot.options))
 	if(class(input)=="list")par(mfrow=c(1, 1))
 
 	# return information as needed
-	return(invisible(list(locations= dataset, plot.control=plot.options)))
+	return(invisible(list(locations= circleplot.object, plot.control=plot.options)))
 	}
-
 
 
 
