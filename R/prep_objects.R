@@ -446,7 +446,12 @@ calc.circleplot<-function(x, plot.options, cluster, style){
 	# get information on points and labels, but do not add x,y coordinates
 	point.dframe<-plot.options$points
 	point.dframe$order.auto<-new.order
-	label.dframe<-plot.options$point.labels
+	if(class(plot.options$point.labels)=="logical"){
+		if(length(plot.options$point.labels)==1){
+			label.dframe<-point.dframe
+			label.dframe$cex<-0}
+	}else{
+		label.dframe<-plot.options$point.labels}
 
 	# reorder as necessary
 	if(any(grepl("order", colnames(point.dframe)))){
