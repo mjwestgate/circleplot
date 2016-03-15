@@ -182,12 +182,17 @@ set.plot.attributes<-function(
 	if(is.null(plot.defaults$par)){plot.defaults$par<-par.default}
 
 	# 3. points
+	matrix.labels<-lapply(input$wide, colnames)[[1]]
 	if(is.null(plot.defaults$points)){ #  | reduce
 		n.points<-lapply(input$wide, ncol)[[1]]  #ncol(input$wide)
-		label.vals<-lapply(input$wide, colnames)[[1]]
+		label.vals<-matrix.labels
 	}else{
 		n.points<-nrow(plot.defaults$points)
-		label.vals<-plot.defaults$points$labels}
+		label.vals<-plot.defaults$points$labels
+		# check these match
+		if(all(sort(matrix.labels)==sort(label.vals))==FALSE){
+			stop("supplied point labels do not match those from the input matrix or data.frame")}
+		}
 	# generate a 'null' data.frame
 	point.defaults<-data.frame(
 			labels= label.vals,
@@ -238,6 +243,7 @@ set.plot.attributes<-function(
 		if(plot.defaults$point.labels){plot.defaults$point.labels<-point.labels}}
 	if(is.null(plot.defaults$point.labels)){
 		plot.defaults$point.labels<-point.labels}
+	# if(any(colnames(plot.defaults$points)=="order")){plot.defaults$point.labels$order<-plot.defaults$points$order}
 
 	# arrow defaults
 	arrow.defaults<-list(angle=10, length=0.07, distance=0.75)
@@ -440,7 +446,12 @@ calc.circleplot<-function(x, plot.options, cluster, style){
 	# get information on points and labels, but do not add x,y coordinates
 	point.dframe<-plot.options$points
 	point.dframe$order.auto<-new.order
-	label.dframe<-plot.options$point.labels
+	if(class(plot.options$point.labels)=="logical"){
+		if(length(plot.options$point.labels)==1){
+			label.dframe<-point.dframe
+			label.dframe$cex<-0}
+	}else{
+		label.dframe<-plot.options$point.labels}
 
 	# reorder as necessary
 	if(any(grepl("order", colnames(point.dframe)))){
@@ -456,12 +467,14 @@ calc.circleplot<-function(x, plot.options, cluster, style){
 	# add coordinates
 	point.dframe<-cbind(circle.points, point.dframe)
 
+	# ensure point and label data.frames having matching row orders
+	label.order<-sapply(point.dframe$labels, function(a, lookup){
+		which(lookup$labels==a)}, lookup=label.dframe)
+	label.dframe<-label.dframe[label.order, ]
+
 	# add labels if needed
 	label.suppress.test<-is.logical(plot.options$point.labels) & length(plot.options$point.labels)==1
-	if(label.suppress.test){
-		label.dframe<-plot.options$point.labels
-	}else{
-		label.dframe<-label.dframe[row.order, ]
+	if(label.suppress.test==FALSE){
 		label.dframe<-cbind(circle.labels[, c(1, 2, 4)], label.dframe)
 		# correct label presentation
 		label.dframe$srt[which(label.dframe$x<0)]<-label.dframe$srt[which(label.dframe$x<0)]+180
@@ -518,6 +531,13 @@ calc.circleplot<-function(x, plot.options, cluster, style){
 			polygon.attributes$group<-final.vals
 		}else{
 			polygon.attributes$group<-1}
+		# now go through these and determine which are different from previous
+		# this works because points are drawn in row order
+		polygon.group<-rep(0, nrow(polygon.attributes))
+		for(i in 2:nrow(polygon.attributes)){
+			if(polygon.attributes$group[i]!=polygon.attributes$group[(i-1)]){polygon.group[i]<-1
+			}else{polygon.group[i]<-0}}
+		polygon.attributes$group<-cumsum(polygon.group)+1
 		# at this point it might be worth removing irrelevant columns (i.e. that only work on points, not polygons)
 		# make a set of polygons for plotting
 		polygon.list.initial<-split(polygon.attributes, polygon.attributes$group)

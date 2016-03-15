@@ -1,6 +1,4 @@
 circleplot	Draw a plot
 draw.circle	Add a circle to an existing plot
 make.circle	Return a set of points on the circumference of a circle
-make.long.format	Convert a matrix to a data.frame
-make.wide.format	Convert a data.frame to a matrix
 point.attr	Generate point colours
