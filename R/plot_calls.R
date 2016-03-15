@@ -28,17 +28,17 @@ circleplot<-function(
 	if(draw & class(input)=="list" & check.names(input)==FALSE){
 		par(mfrow=panel.dims(length(circleplot.object$lines)))}
 
-
-	# if it was, extract relevant information
+	# if input was calculated by circleplot, extract relevant information
 	if(add.existing.plot){
 		plot.options<-input$plot.control
 		circleplot.object<-input$locations
 		line.object<-input$line.data
+		style<-plot.options$style
 
 	# if not, calculate (and plot) node and edge locations as usual
 	}else{
 		dataset<-check.inputs(input, reduce)
-		plot.options<-set.plot.attributes(dataset, plot.control, reduce) # set plot attributes/defaults
+		plot.options<-set.plot.attributes(dataset, plot.control, reduce, style) # set plot attributes/defaults
 		circleplot.object<-calc.circleplot(dataset, plot.options, cluster, style) # get line and point attributes
 
 		# calculate inter-point distances
@@ -83,7 +83,7 @@ circleplot<-function(
 			"pie"={invisible(lapply(circleplot.object$polygons, function(x){do.call(polygon, x)}))},
 			"clock"={
 				invisible(lapply(circleplot.object$nodes, function(x){do.call(lines, x)}))
-				do.call(draw.circle, plot.options$border[-which(names(plot.options$border)=="tcl")])}
+				do.call(lines, circleplot.object$border)}
 			)
 		
 			# label points
