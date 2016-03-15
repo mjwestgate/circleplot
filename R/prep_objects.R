@@ -683,22 +683,34 @@ offset.circleplot<-function(x,
 		# extract information on point locations
 		point.vals<-x$locations$points
 		label.vals<-x$locations$labels
-		# goal is to maintain constant distance of labels from edge - extract these data
-		delta.x<-label.vals$x-point.vals$x
-		delta.y<-label.vals$y-point.vals$y
-		# multiply by scale
-		point.vals$x<-( point.vals$x * scale )
-		point.vals$y<-( point.vals$y * scale )
-		label.vals$x<-point.vals$x + delta.x
-		label.vals$y<-point.vals$y + delta.y
-		# offset x & y
-		point.vals$x<-( point.vals$x + offset.x )
-		point.vals$y<-( point.vals$y + offset.y )
-		label.vals$x<-( label.vals$x + offset.x )
-		label.vals$y<-( label.vals$y + offset.y )	
-		# put back in to original lists
-		x$locations$points<-point.vals
-		x$locations$labels<-label.vals
+	
+		if(any(colnames(label.vals)=="x")){
+			# goal is to maintain constant distance of labels from edge - extract these data
+			delta.x<-label.vals$x-point.vals$x
+			delta.y<-label.vals$y-point.vals$y
+			# multiply by scale
+			point.vals$x<-( point.vals$x * scale )
+			point.vals$y<-( point.vals$y * scale )
+			label.vals$x<-point.vals$x + delta.x
+			label.vals$y<-point.vals$y + delta.y
+			# offset x & y
+			point.vals$x<-( point.vals$x + offset.x )
+			point.vals$y<-( point.vals$y + offset.y )
+			label.vals$x<-( label.vals$x + offset.x )
+			label.vals$y<-( label.vals$y + offset.y )	
+			# put back in to original lists
+			x$locations$points<-point.vals
+			x$locations$labels<-label.vals
+		}else{
+			# multiply by scale
+			point.vals$x<-( point.vals$x * scale )
+			point.vals$y<-( point.vals$y * scale )
+			# offset x & y
+			point.vals$x<-( point.vals$x + offset.x )
+			point.vals$y<-( point.vals$y + offset.y )
+			# put back in to original lists
+			x$locations$points<-point.vals
+		}
 
 	# internal functions
 	adjust.locations<-function(y, ax, ay, mu){
