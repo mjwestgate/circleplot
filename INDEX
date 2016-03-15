@@ -1,4 +1,5 @@
 circleplot	Draw a plot
 draw.circle	Add a circle to an existing plot
 make.circle	Return a set of points on the circumference of a circle
+offset.circleplot	Change the size and origin of circleplot objects
 point.attr	Generate point colours

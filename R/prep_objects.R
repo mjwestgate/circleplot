@@ -663,3 +663,46 @@ panel.dims<-function(n){
 	}else{return(rep(high, 2))}
 	}
 
+
+# function to offset all data in a figure by a specified amount, and/or scale size of the figure
+offset.circleplot<-function(x,
+	offset.x=0,
+	offset.y=0,
+	scale=1	# multiplier
+ 	){
+	# start with point data
+		# extract information on point locations
+		point.vals<-x$locations$points
+		label.vals<-x$locations$labels
+		# goal is to maintain constant distance of labels from edge - extract these data
+		delta.x<-label.vals$x-point.vals$x
+		delta.y<-label.vals$y-point.vals$y
+		# multiply by scale
+		point.vals$x<-( point.vals$x * scale )
+		point.vals$y<-( point.vals$y * scale )
+		label.vals$x<-point.vals$x + delta.x
+		label.vals$y<-point.vals$y + delta.y
+		# offset x & y
+		point.vals$x<-( point.vals$x + offset.x )
+		point.vals$y<-( point.vals$y + offset.y )
+		label.vals$x<-( label.vals$x + offset.x )
+		label.vals$y<-( label.vals$y + offset.y )	
+		# put back in to original lists
+		x$locations$points<-point.vals
+		x$locations$labels<-label.vals
+
+	# repeat for lines
+	adjust.lines<-function(z, add.x, add.y, multiply){
+		lapply(z, function(y, ax, ay, mu){
+			y$x <- y$x * mu
+			y$y <- y$y * mu
+			y$x <- y$x + ax
+			y$y <- y$y + ay
+			return(y)},
+		ax= add.x, ay= add.y, mu= multiply)}
+	x$line.data<-lapply(x$line.data, function(z, add.x, add.y, multiply){
+		adjust.lines(z, add.x, add.y, multiply)},
+		add.x=offset.x, add.y=offset.y, multiply=scale)		
+
+	return(x)
+	}

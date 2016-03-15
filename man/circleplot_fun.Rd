@@ -2,7 +2,7 @@
 \alias{circleplot}
 \title{Plot a pairwise associations between nodes}
 \usage{
-circleplot(x, cluster, reduce, style, add, plot.control)
+circleplot(x, cluster, reduce, draw, add, style, plot.control)
 }
 \arguments{
   \item{x}{a data source containing information on pairwise associations. The standard input is a data.frame with 3 columns, where the first two columns specify the identities of the connected nodes, and the third gives a numeric value describing the connection between those node. Alternatively, x can be a matrix of class 'matrix' or 'dist' with identical results, or list containing >1 of the above.}
@@ -11,9 +11,11 @@ circleplot(x, cluster, reduce, style, add, plot.control)
 
   \item{reduce}{logical - should points with no connections be removed from the plot? Defaults to FALSE}
 
-  \item{style}{command to change the style of plot presentation, largely interms of how points are drawn on the circumference. style='classic' (the default) uses points, 'pie' uses polygons, and 'clock' uses lines.}
+  \item{draw}{logical - should the plot be drawn? Defaults to TRUE. Useful for calculating circleplot objects for later plotting.}
 
   \item{add}{logical (defaulting to FALSE), with behaviour dependent on class(x). When class(x)=="list", default is to divide the window automatically using par(mfrow), while setting add=TRUE allows you to specify your own mfrow values. When class(x)!="list", asks whether new points and lines be added to the existing plot window.}
+
+  \item{style}{command to change the style of plot presentation, largely interms of how points are drawn on the circumference. style='classic' (the default) uses points, 'pie' uses polygons, and 'clock' uses lines.}
 
   \item{plot.control}{a list giving information on how the plot should appear. If given, may contain any or all of the named objects given in notes (below).}
 
