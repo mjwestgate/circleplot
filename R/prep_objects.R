@@ -257,8 +257,8 @@ set.plot.attributes<-function(
 
 	# set line attributes
 	line.locs<-c(
-		which(names(plot.defaults)=="line.gradient"):
-		which(names(plot.defaults)=="line.curvature"))
+		which(names(plot.defaults)=="line.breaks"):
+		which(names(plot.defaults)=="line.widths"))
 	line.attr<-lapply(plot.defaults, function(x){is.null(x)==FALSE})[line.locs]
 	if(any(line.attr==TRUE)){
 		if(line.attr$line.breaks){n.lines<-length(plot.defaults$line.breaks)-1}
