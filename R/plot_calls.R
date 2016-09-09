@@ -19,14 +19,12 @@ circleplot<-function(
 
 	# test whether the object given was calculated by circleplot
 	check.names<-function(x){
-		test<-names(x)==c("locations", "plot.control", "line.data")
-		if(length(test)==0){return(FALSE)
-		}else{all(test)}}
-	add.existing.plot<-class(input)=="list" & length(input)==3 & check.names(input)
-
-	# set plot window attributes
-	if(draw & class(input)=="list" & check.names(input)==FALSE){
-		par(mfrow=panel.dims(length(circleplot.object$lines)))}
+		if(length(x)==3){
+			test<-names(x)==c("locations", "plot.control", "line.data")
+			if(length(test)==0){return(FALSE)
+			}else{all(test)}
+		}else{FALSE}}
+	add.existing.plot<-class(input)=="list" & check.names(input)
 
 	# if input was calculated by circleplot, extract relevant information
 	if(add.existing.plot){
@@ -58,6 +56,10 @@ circleplot<-function(
 			}, add=add, circleplot.object= circleplot.object, 
 				scale.distance= scale.distance, plot.options= plot.options)
 	}
+
+	# set plot window attributes
+	if(draw & class(input)=="list" & check.names(input)==FALSE){
+		par(mfrow=panel.dims(length(circleplot.object$lines)))}
 
 	# DRAW
 	if(draw){
