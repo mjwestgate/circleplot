@@ -5,6 +5,7 @@ circleplot<-function(
 	input,	# a distance matrix (class 'dist') or square matrix (class matrix)
 	cluster=TRUE, # should points be  rearranged using hclust? Defaults to TRUE
 	reduce=FALSE, # should nodes with no connections be removed?
+	draw=TRUE, # should the figure be drawn?
 	add=FALSE, # should this figure be added to an existing plot? 
 	style="classic", # "pie" or "clock" are current alternatives
 	plot.control,	# a list containing plot attributes. See ?circleplot
@@ -16,62 +17,90 @@ circleplot<-function(
 		warning(paste("style = '", style, "' not recognised: switched to style = 'classic'", sep=""))
 		style<-"classic"}
 
-	# initial processing
-	dataset<-check.inputs(input, reduce)
-	plot.options<-set.plot.attributes(dataset, plot.control, reduce) # set plot attributes/defaults
-	circleplot.object<-calc.circleplot(dataset, plot.options, cluster, style) # get line and point attributes
+	# test whether the object given was calculated by circleplot
+	check.names<-function(x){
+		if(length(x)==3){
+			test<-names(x)==c("locations", "plot.control", "line.data")
+			if(length(test)==0){return(FALSE)
+			}else{all(test)}
+		}else{FALSE}}
+	add.existing.plot<-class(input)=="list" & check.names(input)
 
-	# calculate inter-point distances, to allow setting of pc.scale (to calculate curvature of lines relative to origin)
-	point.distance<-dist(circleplot.object$points[, c("x", "y")])
-	scale.distance<-point.distance-min(point.distance)
-	scale.distance<-((scale.distance/max(scale.distance))*
-		plot.options$line.curvature[2])+ plot.options$line.curvature[1]
-	scale.distance<-as.matrix(scale.distance)
+	# if input was calculated by circleplot, extract relevant information
+	if(add.existing.plot){
+		plot.options<-input$plot.control
+		circleplot.object<-input$locations
+		line.object<-input$line.data
+		style<-plot.options$style
+
+	# if not, calculate (and plot) node and edge locations as usual
+	}else{
+		dataset<-check.inputs(input, reduce)
+		plot.options<-set.plot.attributes(dataset, plot.control, reduce, style) # set plot attributes/defaults
+		circleplot.object<-calc.circleplot(dataset, plot.options, cluster, style) # get line and point attributes
+
+		# calculate inter-point distances
+		# allows setting of pc.scale (to calculate curvature of lines relative to origin)
+		point.distance<-dist(circleplot.object$points[, c("x", "y")])
+		scale.distance<-point.distance-min(point.distance)
+		scale.distance<-((scale.distance/max(scale.distance))*
+			plot.options$line.curvature[2])+ plot.options$line.curvature[1]
+		scale.distance<-as.matrix(scale.distance)
+		# loop to calculate and draw lines
+		line.object <-lapply(circleplot.object$lines, 
+			function(a, add, circleplot.object, scale.distance, plot.options){
+				line.list<-split(a, c(1:nrow(a)))
+				line.list<-lapply(line.list, function(x, plot.object, distance, options){
+					calc.lines(x, plot.object, distance, options)},
+					plot.object=circleplot.object, distance=scale.distance, options= plot.options)			
+			}, add=add, circleplot.object= circleplot.object, 
+				scale.distance= scale.distance, plot.options= plot.options)
+	}
 
 	# set plot window attributes
-	if(class(input)=="list")par(mfrow=panel.dims(length(circleplot.object$lines)))
+	if(draw & class(input)=="list" & check.names(input)==FALSE){
+		par(mfrow=panel.dims(length(circleplot.object$lines)))}
+
+	# DRAW
+	if(draw){
+
+		# this has to run within lapply, in case lists are supplied to circleplot
+		invisible(lapply(line.object, function(a, add, circleplot.object, plot.options){
 	
-	invisible(lapply(circleplot.object$lines, function(a, add, circleplot.object, scale.distance, plot.options){
-		if(add==FALSE){
-			do.call(par, circleplot.object$par)
-			do.call(plot, circleplot.object$plot)}
+			if(add==FALSE){
+				do.call(par, circleplot.object$par)
+				do.call(plot, circleplot.object$plot)}
 	
-		# loop to calculate lines of requisite location and colour
-		# line.data<-circleplot.object$lines[[1]]
-		line.list<-split(a, c(1:nrow(a)))
-		line.list<-lapply(line.list, function(x, plot.object, distance, options){
-			calc.lines(x, plot.object, distance, options)},
-			plot.object=circleplot.object, distance=scale.distance, options= plot.options)
-	
-		# draw these lines
-		invisible(lapply(line.list, 
-			FUN=function(z, asymmetric, arrow.attr){
-				draw.curves(z)
-				if(asymmetric)draw.arrows(z, arrow.attr)},
-			asymmetric=attr(circleplot.object, "asymmetric"), arrow.attr=plot.options$arrows))
-	
-		# add points or polygons, depending on style
-		switch(style,
-		"classic"={do.call(points, 
-			as.list(circleplot.object$points[, -which(colnames(circleplot.object$points)=="labels")]))},
-		"pie"={invisible(lapply(circleplot.object$polygons, function(x){do.call(polygon, x)}))},
-		"clock"={
-			invisible(lapply(circleplot.object$nodes, function(x){do.call(lines, x)}))
-			do.call(draw.circle, plot.options$border[-which(names(plot.options$border)=="tcl")])}
-		)
-	
-		# label points
-		label.suppress.test<-is.logical(plot.options$point.labels) & length(plot.options$point.labels)==1
-		if(label.suppress.test==FALSE){
-			labels.list<-split(circleplot.object$labels, 1:nrow(circleplot.object$labels))
-			invisible(lapply(labels.list, FUN=function(x){do.call(text, x)}))}
+			# draw these lines
+			invisible(lapply(a, 
+				FUN=function(z, asymmetric, arrow.attr){
+					draw.curves(z)
+					if(asymmetric)draw.arrows(z, arrow.attr)},
+				asymmetric=attr(circleplot.object, "asymmetric"), arrow.attr=plot.options$arrows))
 		
-	}, add=add, circleplot.object= circleplot.object, scale.distance= scale.distance, plot.options= plot.options))
+			# add points or polygons, depending on style
+			switch(style,
+			"classic"={do.call(points, 
+				as.list(circleplot.object$points[, -which(colnames(circleplot.object$points)=="labels")]))},
+			"pie"={invisible(lapply(circleplot.object$polygons, function(x){do.call(polygon, x)}))},
+			"clock"={
+				invisible(lapply(circleplot.object$nodes, function(x){do.call(lines, x)}))
+				do.call(lines, circleplot.object$border)}
+			)
+		
+			# label points
+			label.suppress.test<-is.logical(plot.options$point.labels) & length(plot.options$point.labels)==1
+			if(label.suppress.test==FALSE){
+				labels.list<-split(circleplot.object$labels, 1:nrow(circleplot.object$labels))
+				invisible(lapply(labels.list, FUN=function(x){do.call(text, x)}))}
 	
-	if(class(input)=="list")par(mfrow=c(1, 1))
+		}, add=add, circleplot.object= circleplot.object, plot.options= plot.options))
+	
+	if(class(input)=="list" & add.existing.plot==FALSE)par(mfrow=c(1, 1))	
+	} # end if(draw)
 
 	# return information as needed
-	return(invisible(list(locations= circleplot.object, plot.control=plot.options)))
+	return(invisible(list(locations= circleplot.object, plot.control=plot.options, line.data= line.object)))
 	}
 
 

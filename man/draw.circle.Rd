@@ -16,7 +16,7 @@ draw.circle(k=1, x0=0, y0=0, filled=FALSE, n=100, trim=0, alpha=0, ...)
 
 }
 \value{
-plots the circle as spefied; also returns a data.frame with the specified information
+plots the circle as specified; also returns a data.frame with the specified information
 }
 \description{
 Adds a circle to an existing plot

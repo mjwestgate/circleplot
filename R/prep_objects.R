@@ -144,11 +144,12 @@ append.missed.columns<-function(
 set.plot.attributes<-function(
 	input,	# result from check.inputs
 	plot.control,
-	reduce # should this be here? Or put elsewhere, perhaps with cluster?
+	reduce, # should this be here? Or put elsewhere, perhaps with cluster?
+	style="classic"
 	)
 	{
 	## GENERATE AND FILL AN EMPTY LIST FOR PLOT.CONTROL ##
-	control.names<-c("plot.rotation", "par", "plot",
+	control.names<-c("style", "plot.rotation", "par", "plot",
 		"points", 
 		"point.labels", 
 		"line.breaks", "line.cols", "line.widths", 
@@ -174,6 +175,8 @@ set.plot.attributes<-function(
 		}
 
 	## FILL IN MISSING DATA WITH DEFAULTS ## 
+	plot.defaults$style<-style
+
 	# 1. plot.rotation
 	if(is.null(plot.defaults$plot.rotation)){plot.defaults$plot.rotation<-0}
 
@@ -253,7 +256,10 @@ set.plot.attributes<-function(
 		plot.defaults$arrows<-append.missed.columns(plot.control$arrows, arrow.defaults)}}
 
 	# set line attributes
-	line.attr<-lapply(plot.defaults, function(x){is.null(x)==FALSE})[6:8]
+	line.locs<-c(
+		which(names(plot.defaults)=="line.breaks"):
+		which(names(plot.defaults)=="line.widths"))
+	line.attr<-lapply(plot.defaults, function(x){is.null(x)==FALSE})[line.locs]
 	if(any(line.attr==TRUE)){
 		if(line.attr$line.breaks){n.lines<-length(plot.defaults$line.breaks)-1}
 		if(line.attr$line.cols){n.lines<-length(plot.defaults$line.cols)}
@@ -491,9 +497,6 @@ calc.circleplot<-function(x, plot.options, cluster, style){
 	if(style=="clock"){
 		coord.start<-as.data.frame(
 			make.circle(n.points, alpha= plot.options$plot.rotation, k=(1 + plot.options$border$tcl))[, 2:3])
-		# point.data<-point.list$points
-		# remove.cols<-c(which(colnames(point.data)=="pch"), which(colnames(point.data)=="labels"))
-		# point.data<-point.data[, -remove.cols]
 		x.list<-as.list(as.data.frame(t(cbind(point.list$points$x, coord.start$x))))
 			names(x.list)<-rep("x", length(x.list))
 		y.list<-as.list(as.data.frame(t(cbind(point.list$points$y, coord.start$y))))
@@ -506,6 +509,11 @@ calc.circleplot<-function(x, plot.options, cluster, style){
 			data.list[[i]]<-append(coordinates, border.attr)
 			}
 		point.list$nodes<-data.list
+		# now add the border itself
+		border.coords<-make.circle(100, alpha= plot.options$plot.rotation, k=1)[, 2:3]
+		border.coords<-rbind(border.coords, border.coords[1, ])
+		point.list$border<-append(as.list(border.coords), 
+			plot.options$border[-which(names(plot.options$border)=="tcl")])
 	}
 
 	if(style=="pie"){
@@ -663,3 +671,78 @@ panel.dims<-function(n){
 	}else{return(rep(high, 2))}
 	}
 
+
+# function to offset all data in a figure by a specified amount, and/or scale size of the figure
+offset.circleplot<-function(x,
+	offset.x=0,
+	offset.y=0,
+	scale=1	# multiplier
+ 	){
+
+	# start with point data
+		# extract information on point locations
+		point.vals<-x$locations$points
+		label.vals<-x$locations$labels
+	
+		if(any(colnames(label.vals)=="x")){
+			# goal is to maintain constant distance of labels from edge - extract these data
+			delta.x<-label.vals$x-point.vals$x
+			delta.y<-label.vals$y-point.vals$y
+			# multiply by scale
+			point.vals$x<-( point.vals$x * scale )
+			point.vals$y<-( point.vals$y * scale )
+			label.vals$x<-point.vals$x + delta.x
+			label.vals$y<-point.vals$y + delta.y
+			# offset x & y
+			point.vals$x<-( point.vals$x + offset.x )
+			point.vals$y<-( point.vals$y + offset.y )
+			label.vals$x<-( label.vals$x + offset.x )
+			label.vals$y<-( label.vals$y + offset.y )	
+			# put back in to original lists
+			x$locations$points<-point.vals
+			x$locations$labels<-label.vals
+		}else{
+			# multiply by scale
+			point.vals$x<-( point.vals$x * scale )
+			point.vals$y<-( point.vals$y * scale )
+			# offset x & y
+			point.vals$x<-( point.vals$x + offset.x )
+			point.vals$y<-( point.vals$y + offset.y )
+			# put back in to original lists
+			x$locations$points<-point.vals
+		}
+
+	# internal functions
+	adjust.locations<-function(y, ax, ay, mu){
+		y$x <- y$x * mu
+		y$y <- y$y * mu
+		y$x <- y$x + ax
+		y$y <- y$y + ay
+		return(y)}
+	adjust.lines<-function(z, add.x, add.y, multiply){
+		lapply(z, function(z, ax, ay, mu){adjust.locations(z, ax, ay, mu)},
+		ax= add.x, ay= add.y, mu= multiply)}
+
+	# adjust remaining content
+	# lines
+	x$line.data<-lapply(x$line.data, function(z, add.x, add.y, multiply){
+		adjust.lines(z, add.x, add.y, multiply)},
+		add.x=offset.x, add.y=offset.y, multiply=scale)
+
+	# borders (style="clock")
+	if(any(names(x$locations)=="border")){
+		x$locations$border<-adjust.locations(x$locations$border, offset.x, offset.y, scale)}
+
+	if(any(names(x$locations)=="nodes")){
+		x$locations$nodes<-lapply(x$locations$nodes, function(y, ax, ay, mu){
+			adjust.locations(y, ax, ay, mu)},
+			ax= offset.x, ay= offset.y, mu= scale)}	
+
+	# polygons (style="pie")
+	if(any(names(x$locations)=="polygons")){
+		x$locations$polygons<-lapply(x$locations$polygons, function(y, ax, ay, mu){
+			adjust.locations(y, ax, ay, mu)},
+			ax= offset.x, ay= offset.y, mu= scale)}	
+
+	return(x)
+	}
