@@ -332,7 +332,7 @@ set.plot.attributes<-function(
 	## ERROR AVOIDANCE ##
 	# ensure line.breaks incapsulate all values of input
 	if(all(is.na(line.vals))==FALSE){
-		range.input<-range(line.vals)
+		range.input<-range(line.vals, na.rm=TRUE)
 		range.breaks<-range(plot.defaults$line.breaks)
 		if(range.breaks[1]>range.input[1] | range.breaks[2]<range.input[2]){
 			stop(paste(
