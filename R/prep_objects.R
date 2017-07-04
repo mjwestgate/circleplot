@@ -57,6 +57,7 @@ check.inputs<-function(
 		# both are needed for asymmetric matrices
 		keep.both<-apply(cbind(keep.rows, keep.cols), 1, function(x){any(x==TRUE)})
 		keep.units<-as.numeric(which(keep.both))
+		if(length(keep.units)<1){stop("No nodes selected with reduce=TRUE")}
 		wide<-list(wide[[1]][keep.units, keep.units])
 		distance<-as.dist(as.matrix(distance)[keep.units, keep.units])
 		# ensure long format matches
@@ -99,10 +100,13 @@ remove.inf.values<-function(x, distmat){
 binary.test.fun<-function(x){
 	in.vals<-x[is.na(x[, 3])==FALSE, 3]
 	n.vals<-length(unique(in.vals))
-	if(n.vals==1){if(unique(in.vals)==1){binary.test<-TRUE}else{binary.test<-FALSE}}
-	if(n.vals==2){if(max(in.vals)==1 & min(in.vals)==0){binary.test<-TRUE
-		}else{binary.test<-FALSE}}
-	if(n.vals>2){binary.test<-FALSE}
+	if(n.vals>2){n.vals<-3}
+	switch(as.character(n.vals), 
+		"0"={binary.test<-FALSE},
+		"1"={if(unique(in.vals)==1){binary.test<-TRUE}else{binary.test<-FALSE}},
+		"2"={if(max(in.vals)==1 & min(in.vals)==0){binary.test<-TRUE
+			}else{binary.test<-FALSE}},
+		"3"={binary.test<-FALSE})
 	return(binary.test)
 	}
 
@@ -276,10 +280,10 @@ set.plot.attributes<-function(
 
 	# set defaults for line cuts, colours etc - set all to grey by default
 	line.vals<-unlist(lapply(input$long, function(x){x[, 3]}))
-	line.vals<-line.vals[which(is.na(line.vals)==FALSE)]
-	if(input$binary){
-			cut.vals<-c(-1, 2)	; line.cols<-"grey30"
+	if(all(is.na(line.vals)) | input$binary){
+			cut.vals<-c(-1, 2)	; line.cols<-"grey30"		
 	}else{	# for numeric matrices
+		line.vals<-line.vals[which(is.na(line.vals)==FALSE)]
 		line.vals.short<-line.vals
 		line.vals.short<-line.vals.short[which(line.vals.short!=Inf)]
 		line.vals.short<-line.vals.short[which(line.vals.short!=-Inf)]
@@ -327,13 +331,15 @@ set.plot.attributes<-function(
 
 	## ERROR AVOIDANCE ##
 	# ensure line.breaks incapsulate all values of input
-	range.input<-range(line.vals)
-	range.breaks<-range(plot.defaults$line.breaks)
-	if(range.breaks[1]>range.input[1] | range.breaks[2]<range.input[2]){
-		stop(paste(
-			'Specified line.breaks do not encapsulate the range of values of the input matrix (min=',
-			round(range.input[1], 2), ', max=', round(range.input[2], 2), 
-			'); please specify new breaks', sep=""))
+	if(all(is.na(line.vals))==FALSE){
+		range.input<-range(line.vals)
+		range.breaks<-range(plot.defaults$line.breaks)
+		if(range.breaks[1]>range.input[1] | range.breaks[2]<range.input[2]){
+			stop(paste(
+				'Specified line.breaks do not encapsulate the range of values of the input matrix (min=',
+				round(range.input[1], 2), ', max=', round(range.input[2], 2), 
+				'); please specify new breaks', sep=""))
+			}
 		}
 
 	# ensure correct number of colours and widths added
@@ -447,7 +453,7 @@ calc.circleplot<-function(x, plot.options, cluster, style){
 	if(cluster){
 		cluster.result<-as.data.frame(hclust(x$distance)[3:4])
 		new.order<-order(cluster.result$order)
-	}else{new.order<-c(1:nrow(circle.points))}
+	}else{new.order<-c(1:n.points)}
 
 	# get information on points and labels, but do not add x,y coordinates
 	point.dframe<-plot.options$points
@@ -565,7 +571,7 @@ calc.circleplot<-function(x, plot.options, cluster, style){
 
 	# LINES
 	line.list<-lapply(x$long, function(y, binary, options.list){
-		colnames(y)[3]<-"value"
+		colnames(y)[c(1:3)]<-c("sp1", "sp2", "value")
 		clean.lines(y, binary, options.list)}, binary=x$binary, options.list=plot.options)
 
 	# PLOT

@@ -49,10 +49,12 @@ circleplot<-function(
 		# loop to calculate and draw lines
 		line.object <-lapply(circleplot.object$lines, 
 			function(a, add, circleplot.object, scale.distance, plot.options){
-				line.list<-split(a, c(1:nrow(a)))
-				line.list<-lapply(line.list, function(x, plot.object, distance, options){
-					calc.lines(x, plot.object, distance, options)},
-					plot.object=circleplot.object, distance=scale.distance, options= plot.options)			
+				if(nrow(a)>0){  # this may not be sufficient
+					line.list<-split(a, c(1:nrow(a)))
+					line.list<-lapply(line.list, function(x, plot.object, distance, options){
+						calc.lines(x, plot.object, distance, options)},
+						plot.object=circleplot.object, distance=scale.distance, options= plot.options)	
+					}		
 			}, add=add, circleplot.object= circleplot.object, 
 				scale.distance= scale.distance, plot.options= plot.options)
 	}
@@ -65,6 +67,7 @@ circleplot<-function(
 	if(draw){
 
 		# this has to run within lapply, in case lists are supplied to circleplot
+		# if(is.null(line.object[[1]])==FALSE){
 		invisible(lapply(line.object, function(a, add, circleplot.object, plot.options){
 	
 			if(add==FALSE){
@@ -72,12 +75,14 @@ circleplot<-function(
 				do.call(plot, circleplot.object$plot)}
 	
 			# draw these lines
-			invisible(lapply(a, 
-				FUN=function(z, asymmetric, arrow.attr){
-					draw.curves(z)
-					if(asymmetric)draw.arrows(z, arrow.attr)},
-				asymmetric=attr(circleplot.object, "asymmetric"), arrow.attr=plot.options$arrows))
-		
+			if(is.null(a)==FALSE){
+				invisible(lapply(a, 
+					FUN=function(z, asymmetric, arrow.attr){
+						draw.curves(z)
+						if(asymmetric)draw.arrows(z, arrow.attr)},
+					asymmetric=attr(circleplot.object, "asymmetric"), arrow.attr=plot.options$arrows))
+				}
+
 			# add points or polygons, depending on style
 			switch(style,
 			"classic"={do.call(points, 

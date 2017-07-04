@@ -72,36 +72,41 @@ make.dist.format<-function(input){
 	if(class(input)=="data.frame"){
 		wide<-make.wide.format(input)
 		long<-input}
-	# remove infinite values
-	if(any(long[, 3]==Inf, na.rm=TRUE)){
-		replace.locs<-which(long[, 3]==Inf)
-		replace.vals<-max(long[-replace.locs, 3], na.rm=TRUE)*2
-		long[replace.locs, 3]<-replace.vals}
-	if(any(input[, 3]==-Inf, na.rm=TRUE)){
-		replace.locs<-which(long[, 3]==-Inf)
-		replace.vals<-min(long[-replace.locs, 3], na.rm=TRUE)
-		if(replace.vals<0){replace.vals<-replace.vals*2}else{replace.vals<-replace.vals*0.5}
-		long[replace.locs, 3]<-replace.vals}
-	# make +ve definite
-	if(min(long[, 3], na.rm=TRUE)<0){
-		long[, 3]<-long[, 3]-min(long[, 3], na.rm=TRUE)}
-	# invert to make into a distance
-	long[, 3]<-max(long[, 3], na.rm=TRUE)-long[, 3]
-	# convert to matrix, check for asymmetry
-	asymmetric<-all(wide==t(wide), na.rm=TRUE)==FALSE
-	if(asymmetric){
-		wide.array<-array(data=NA, dim=c(dim(wide), 2))
-		wide.array[,,1]<-wide
-		wide.array[,,2]<-t(wide)
-		wide.array<-apply(wide.array, c(1, 2), sum)
-		colnames(wide.array)<-colnames(wide)
-		rownames(wide.array)<-rownames(wide)
-		result<-as.dist(wide.array)
-	}else{
-		result<-as.dist(wide)}
-	# set na values to the mean (i.e. no effect on clustering)
-	if(any(is.na(result))){
-		result[which(is.na(result))]<-mean(result, na.rm=TRUE)}
+	if(all(is.na(long[, 3]))){
+		result<-as.dist(wide)
+		result[1:length(result)]<-0
+		asymmetric<-FALSE
+	}else{ # i.e. if this column contains any information at all
+		# remove infinite values
+		if(any(long[, 3]==Inf, na.rm=TRUE)){
+			replace.locs<-which(long[, 3]==Inf)
+			replace.vals<-max(long[-replace.locs, 3], na.rm=TRUE)*2
+			long[replace.locs, 3]<-replace.vals}
+		if(any(input[, 3]==-Inf, na.rm=TRUE)){
+			replace.locs<-which(long[, 3]==-Inf)
+			replace.vals<-min(long[-replace.locs, 3], na.rm=TRUE)
+			if(replace.vals<0){replace.vals<-replace.vals*2}else{replace.vals<-replace.vals*0.5}
+			long[replace.locs, 3]<-replace.vals}
+		# make +ve definite
+		if(min(long[, 3], na.rm=TRUE)<0){
+			long[, 3]<-long[, 3]-min(long[, 3], na.rm=TRUE)}
+		# invert to make into a distance
+		long[, 3]<-max(long[, 3], na.rm=TRUE)-long[, 3]
+		# convert to matrix, check for asymmetry
+		asymmetric<-all(wide==t(wide), na.rm=TRUE)==FALSE
+		if(asymmetric){
+			wide.array<-array(data=NA, dim=c(dim(wide), 2))
+			wide.array[,,1]<-wide
+			wide.array[,,2]<-t(wide)
+			wide.array<-apply(wide.array, c(1, 2), sum)
+			colnames(wide.array)<-colnames(wide)
+			rownames(wide.array)<-rownames(wide)
+			result<-as.dist(wide.array)
+		}else{
+			result<-as.dist(wide)}
+		# set na values to the mean (i.e. no effect on clustering)
+		if(any(is.na(result))){result[which(is.na(result))]<-mean(result, na.rm=TRUE)}
+	}
 	return(list(asymmetric= asymmetric, dist.matrix=result))
 	}
 
